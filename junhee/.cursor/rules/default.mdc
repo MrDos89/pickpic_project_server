@@ -1,0 +1,27 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+- 시킨것만 하고 딴짓하지마
+- 내가 수정한 코드 고치지마
+- 잘좀해라.
+- file structure
+    project_root/
+    ├── app/
+    │   ├── __init__.py
+    │   ├── main.py
+    │   ├── api/
+    │   │   ├── __init__.py
+    │   │   └── v1/
+    │   │       ├── __init__.py
+    │   │       └── ... (각 API별 모듈)
+    │   ├── core/
+    │   │   ├── __init__.py
+    │   │   └── config.py
+    │   └── models/
+    │       ├── __init__.py
+    │       └── ... (각 모델별 모듈)
+    ├── requirements.txt
+
+    └── ...
