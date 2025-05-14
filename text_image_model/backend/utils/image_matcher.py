@@ -21,7 +21,7 @@ def find_similar_images_by_clip(text: str, image_dir: str, features_dir: str, to
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = SiglipModel.from_pretrained('google/siglip-so400m-patch14-384').to(device)
-    processor = SiglipProcessor.from_pretrained('google/siglip-so400m-patch14-384')
+    processor = SiglipProcessor.from_pretrained('google/siglip-so400m-patch14-384', use_fast=True)
 
     # 이미지 임베딩(.npy) 파일 목록
     feature_files = [f for f in os.listdir(features_dir) if f.endswith('.npy')]
@@ -90,7 +90,7 @@ def save_clip_image_features(image_dir: str, features_dir: str):
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = SiglipModel.from_pretrained('google/siglip-so400m-patch14-384').to(device)
-    processor = SiglipProcessor.from_pretrained('google/siglip-so400m-patch14-384')
+    processor = SiglipProcessor.from_pretrained('google/siglip-so400m-patch14-384', use_fast=True)
 
     os.makedirs(features_dir, exist_ok=True)
     image_files = [f for f in os.listdir(image_dir) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
@@ -99,7 +99,7 @@ def save_clip_image_features(image_dir: str, features_dir: str):
         feature_path = os.path.join(features_dir, fname + ".npy")
         if os.path.exists(feature_path):
             # 이미 임베딩이 존재하면 건너뜀
-            print(f"이미 존재: {feature_path} (건너뜀)")
+            # print(f"이미 존재: {feature_path} (건너뜀)")
             continue
 
         img_path = os.path.join(image_dir, fname)
@@ -116,20 +116,26 @@ def save_clip_image_features(image_dir: str, features_dir: str):
         np.save(feature_path, image_features)
         print(f"저장 완료: {feature_path}")
 
-# 직접실행
+def run_query(query):
+    # 쿼리 실행 로직
+    print(f"찾을 사진: {query}")
+    # 실제 쿼리 실행 코드 작성
+
 if __name__ == "__main__":
+    query = input("찾을 사진: ")
+    run_query(query)
+
     image_dir = "./backend/user_photos"
     features_dir = "./backend/features"
-    query = "고기"
     top_n = 5
-    similarity_threshold = 0.076
+    similarity_threshold = 0.066
 
     results = find_similar_images_by_clip(query, image_dir, features_dir, top_n=top_n, similarity_threshold=similarity_threshold)
     if not results:
         print("유사한 이미지가 없습니다.")
     else:
         for r in results:
-            print(f"파일명: {r['filename']}, 매칭 키워드: {r['matched_keywords']}, 유사도: {r['scores']}")
+            # print(f"파일명: {r['filename']}, 매칭 키워드: {r['matched_keywords']}, 유사도: {r['scores']}")
             img_path = os.path.join(image_dir, r['filename'])
             img = Image.open(img_path)
             img.show()
