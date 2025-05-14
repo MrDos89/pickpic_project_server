@@ -5,6 +5,11 @@ import base64
 import numpy as np
 from typing import Optional, List
 
+# 프로젝트 루트 디렉토리 경로 설정
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+TEMP_DIR = os.path.join(PROJECT_ROOT, "temp")
+
 def find_similar_images_by_clip(text: str, image_dir: str, features_dir: str, top_n: int = 5, similarity_threshold: float = 0.0) -> Optional[List[dict]]:
     """
     띄어쓰기로 구분된 여러 키워드가 들어오면 각 키워드별로 영어로 번역 후 따로 검색해서
@@ -125,17 +130,16 @@ if __name__ == "__main__":
     query = input("찾을 사진: ")
     run_query(query)
 
-    image_dir = "../data"
-    features_dir = "../temp"
-    top_n = 5
+    image_dir = "data"
+    features_dir ="temp"
+    # top_n = 5
     similarity_threshold = 0.066
 
-    results = find_similar_images_by_clip(query, image_dir, features_dir, top_n=top_n, similarity_threshold=similarity_threshold)
+    results = find_similar_images_by_clip(query, image_dir, features_dir, similarity_threshold=similarity_threshold)
     if not results:
         print("유사한 이미지가 없습니다.")
     else:
         for r in results:
-            # print(f"파일명: {r['filename']}, 매칭 키워드: {r['matched_keywords']}, 유사도: {r['scores']}")
             img_path = os.path.join(image_dir, r['filename'])
             img = Image.open(img_path)
             img.show()
