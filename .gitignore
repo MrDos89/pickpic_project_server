@@ -1,30 +1,162 @@
-# Created by https://www.toptal.com/developers/gitignore/api/java
-# Edit at https://www.toptal.com/developers/gitignore?templates=java
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 
-### Java ###
-# Compiled class file
-*.class
+# C extensions
+*.so
 
-# Log file
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+pytestdebug.log
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
 *.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
 
-# BlueJ files
-*.ctxt
+# Flask stuff:
+instance/
+.webassets-cache
 
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
+# Scrapy stuff:
+.scrapy
 
-# Package Files #
-*.jar
-*.war
-*.nar
-*.ear
+# PyBuilder
+target/
+
+# IPython / Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# Pyre type checker
+.pyre/
+
+# pytype
+.pytype/
+
+# Pylint
+pylint-report.txt
+pylint-global.txt
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# PyCharm / VSCode
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# VSCode Jupyter output
+*.jupyterlab-settings
+*.jupyterlab-workspace
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+.env/
+env.bak/
+venv.bak/
+
+# ML/AI related cache
+runs/
+logs/
+checkpoints/
+*.ckpt
+*.pth
+*.pt
+*.onnx
+*.pb
+*.h5
+*.joblib
+*.pkl
+*.tflite
+*.mlmodel
+
+# Data files
+*.csv
+*.tsv
+*.xls
+*.xlsx
+*.jsonl
+*.db
+*.npz
+*.npy
+*.hdf5
+*.parquet
+
+# Large datasets (you might want to version them with DVC)
+data/
 *.zip
 *.tar.gz
-*.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*
+# DVC cache
+.dvc/
+*.dvc
+.cache/
 
-# End of https://www.toptal.com/developers/gitignore/api/java
+# Temporary / backup files
+*.bak
+*.tmp
+*.swp
+*.swo
+*.~ 
+.DS_Store
+Thumbs.db
+
+# VSCode History Extension
+.history/
+
+# 이미지 파일 무시
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.tif
+*.webp
+*.svg
+*.ico
