@@ -71,10 +71,7 @@ if not query_image_path:
 
 # 유사도 기준값 입력 받기 (기본값 0.75)
 try:
-    similarity_threshold = float(input("유사도 임계값을 입력하세요 (0~1, 예: 0.75, 엔터시 기본값 0.75): ") or 0.75)
-    if not (0.0 <= similarity_threshold <= 1.0):
-        print("0~1 사이의 값을 입력해야 합니다. 기본값 0.75로 진행합니다.")
-        similarity_threshold = 0.75
+    similarity_threshold = 0.75  # 기본값으로 고정
 except ValueError:
     print("잘못된 입력입니다. 기본값 0.75로 진행합니다.")
     similarity_threshold = 0.75
