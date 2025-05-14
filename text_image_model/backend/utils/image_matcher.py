@@ -125,8 +125,8 @@ if __name__ == "__main__":
     query = input("찾을 사진: ")
     run_query(query)
 
-    image_dir = "./backend/user_photos"
-    features_dir = "./backend/features"
+    image_dir = "../data"
+    features_dir = "../temp"
     top_n = 5
     similarity_threshold = 0.066
 
