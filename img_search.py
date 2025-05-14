@@ -1,4 +1,34 @@
 import os
+import subprocess
+import sys
+
+def install_requirements():
+    """
+    requirements.txt 파일에서 필요한 라이브러리들을 설치합니다.
+    """
+    try:
+        # requirements.txt 파일이 존재하는지 확인
+        if not os.path.exists('requirements.txt'):
+            print("requirements.txt 파일을 찾을 수 없습니다.")
+            return False
+
+        # pip install -r requirements.txt 명령어 실행
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
+        print("라이브러리 설치가 완료되었습니다.")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"라이브러리 설치 중 오류가 발생했습니다: {e}")
+        return False
+    except Exception as e:
+        print(f"예상치 못한 오류가 발생했습니다: {e}")
+        return False
+
+# 프로그램 시작 전 라이브러리 설치
+if not install_requirements():
+    print("라이브러리 설치에 실패했습니다. 프로그램을 종료합니다.")
+    sys.exit(1)
+
+import os
 from transformers import CLIPProcessor, CLIPModel
 from PIL import Image, ImageTk
 import torch
@@ -7,7 +37,6 @@ import tkinter as tk
 from tkinter import filedialog, simpledialog
 from ultralytics import YOLO  # YOLOv8 import
 
-#ㅇㅇ
 # 모델 준비
 model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
 processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
@@ -69,12 +98,8 @@ if not query_image_path:
     print("이미지를 선택하지 않았습니다. 프로그램을 종료합니다.")
     exit()
 
-# 유사도 기준값 입력 받기 (기본값 0.75)
-try:
-    similarity_threshold = 0.75  # 기본값으로 고정
-except ValueError:
-    print("잘못된 입력입니다. 기본값 0.75로 진행합니다.")
-    similarity_threshold = 0.75
+# 유사도 기준값 설정
+similarity_threshold = 0.6  # 기본값
 
 # 기준 이미지 임베딩
 query_embedding = get_clip_embedding_from_pil(Image.open(query_image_path).convert("RGB"))
