@@ -1,19 +1,23 @@
-import uvicorn
-from fastapi import FastAPI
-from src.api.v1.image_search import router as image_search_router
-from src.api.v1.pose_detection import router as pose_detection_router
-from src.core.config import API_TITLE, API_DESCRIPTION, API_VERSION
-import sys
-import os
-from src.models import model1, model2
-
 try:
-    import requests
+    import uvicorn
+    from fastapi import FastAPI
+    from src.api.v1.image_search import router as image_search_router
+    from src.api.v1.pose_detection import router as pose_detection_router
+    from src.core.config import API_TITLE, API_DESCRIPTION, API_VERSION
+    import sys
+    import os
+    from src.models import model1, model2
 except ImportError:
     import sys
     import subprocess
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'requests'])
-    import requests
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt'])
+    import uvicorn
+    from fastapi import FastAPI
+    from src.api.v1.image_search import router as image_search_router
+    from src.api.v1.pose_detection import router as pose_detection_router
+    from src.core.config import API_TITLE, API_DESCRIPTION, API_VERSION
+    import os
+    from src.models import model1, model2
 
 app = FastAPI(
     title=API_TITLE,
