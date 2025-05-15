@@ -1,9 +1,18 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict
-from ..utils.image_search import find_similar_images_by_clip, save_clip_image_features
-from ..utils.config import DATA_DIR, TEMP_DIR, SIMILARITY_THRESHOLD
+from ..text_image_model.image_search import find_similar_images_by_clip, save_clip_image_features
 import os
+import sys
+from pathlib import Path
+
+# 프로젝트 루트 디렉토리 경로 설정
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+DATA_DIR = PROJECT_ROOT / "data"
+TEMP_DIR = PROJECT_ROOT / "temp"
+
+# 이미지 검색 설정
+SIMILARITY_THRESHOLD = 0.066
 
 router = APIRouter()
 

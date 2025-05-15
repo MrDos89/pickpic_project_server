@@ -2,8 +2,8 @@ from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import JSONResponse
 import cv2
 import numpy as np
-from ..pose_detector import PoseDetector
-from ..models import model
+from ..pose_detection_model import PoseDetector
+from ..pose_detection_model import model
 import mediapipe as mp
 from ultralytics import YOLO
 

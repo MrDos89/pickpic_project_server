@@ -3,10 +3,14 @@ import subprocess
 subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt'])
 import uvicorn
 from fastapi import FastAPI
-from src.api.v1.image_search import router as image_search_router
-from src.api.v1.pose_detection import router as pose_detection_router
-from src.core.config import API_TITLE, API_DESCRIPTION, API_VERSION
+from src.api.image_search import router as image_search_router
+from src.api.pose_detection import router as pose_detection_router
 import os
+
+# FastAPI 설정
+API_TITLE = "이미지 검색 API"
+API_DESCRIPTION = "CLIP 모델을 사용한 이미지 검색 API"
+API_VERSION = "1.0.0"
 
 app = FastAPI(
     title=API_TITLE,
