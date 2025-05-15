@@ -1,23 +1,12 @@
-try:
-    import uvicorn
-    from fastapi import FastAPI
-    from api.v1.image_search import router as image_search_router
-    from api.v1.pose_detection import router as pose_detection_router
-    from core.config import API_TITLE, API_DESCRIPTION, API_VERSION
-    import sys
-    import os
-    from models import model
-except ImportError:
-    import sys
-    import subprocess
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt'])
-    import uvicorn
-    from fastapi import FastAPI
-    from api.v1.image_search import router as image_search_router
-    from api.v1.pose_detection import router as pose_detection_router
-    from core.config import API_TITLE, API_DESCRIPTION, API_VERSION
-    import os
-    from models import model
+import sys
+import subprocess
+subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt'])
+import uvicorn
+from fastapi import FastAPI
+from src.api.v1.image_search import router as image_search_router
+from src.api.v1.pose_detection import router as pose_detection_router
+from src.core.config import API_TITLE, API_DESCRIPTION, API_VERSION
+import os
 
 app = FastAPI(
     title=API_TITLE,
@@ -45,23 +34,17 @@ if models_path not in sys.path:
 
 def cli_main():
     print("===================================")
-    print(" 포즈 검출 프로그램")
+    print(" 포즈 검출 프로그램 (Ensemble Model)")
     print("===================================")
-    print("1. Mediapipe Pose Detection")
-    print("2. YOLOv8 Pose Detection")
     print("0. 종료")
     print("-----------------------------------")
-
     while True:
-        choice = input("모델을 선택하세요 (1/2/0): ").strip()
-        if choice == "1":
-            model1.main(data_path)
-        elif choice == "2":
-            model2.main(data_path)
-        elif choice == "0":
+        choice = input("엔트리포인트를 실행하려면 0을 입력하세요 (종료: 0): ").strip()
+        if choice == "0":
             break
         else:
-            print("잘못 입력했습니다. 다시 입력하세요.")
+            print("Ensemble 모델 실행!")
+            model.main(data_path)
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "cli":
