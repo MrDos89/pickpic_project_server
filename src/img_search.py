@@ -15,7 +15,7 @@ try:
 except ImportError:
 	import sys
 	import subprocess
-	subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'requests'])
+	subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--r', '-requirenents.txt'])
 
 # 모델 준비
 model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
