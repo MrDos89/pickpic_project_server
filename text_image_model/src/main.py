@@ -1,16 +1,3 @@
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
-import uvicorn
-from fastapi import FastAPI
-from src.api.v1.image_search import router as image_search_router
-from src.api.v1.pose_detection import router as pose_detection_router
-from src.core.config import API_TITLE, API_DESCRIPTION, API_VERSION
-import sys
-import os
-from src.models import model
-=======
->>>>>>> Stashed changes
 try:
     import uvicorn
     from fastapi import FastAPI
@@ -19,7 +6,7 @@ try:
     from core.config import API_TITLE, API_DESCRIPTION, API_VERSION
     import sys
     import os
-    from models import model1, model2
+    from models import model
 except ImportError:
     import sys
     import subprocess
@@ -30,11 +17,7 @@ except ImportError:
     from api.v1.pose_detection import router as pose_detection_router
     from core.config import API_TITLE, API_DESCRIPTION, API_VERSION
     import os
-    from models import model1, model2
-<<<<<<< Updated upstream
-=======
->>>>>>> 631694bf0fb945e23ae8ce9fcd505b673c127b7e
->>>>>>> Stashed changes
+    from models import model
 
 app = FastAPI(
     title=API_TITLE,
