@@ -1,34 +1,4 @@
 import os
-import subprocess
-import sys
-
-def install_requirements():
-    """
-    requirements.txt 파일에서 필요한 라이브러리들을 설치합니다.
-    """
-    try:
-        # requirements.txt 파일이 존재하는지 확인
-        if not os.path.exists('requirements.txt'):
-            print("requirements.txt 파일을 찾을 수 없습니다.")
-            return False
-
-        # pip install -r requirements.txt 명령어 실행
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
-        print("라이브러리 설치가 완료되었습니다.")
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"라이브러리 설치 중 오류가 발생했습니다: {e}")
-        return False
-    except Exception as e:
-        print(f"예상치 못한 오류가 발생했습니다: {e}")
-        return False
-
-# 프로그램 시작 전 라이브러리 설치
-if not install_requirements():
-    print("라이브러리 설치에 실패했습니다. 프로그램을 종료합니다.")
-    sys.exit(1)
-
-import os
 from transformers import CLIPProcessor, CLIPModel
 from PIL import Image, ImageTk
 import torch
@@ -36,11 +6,18 @@ import numpy as np
 import tkinter as tk
 from tkinter import filedialog, simpledialog
 from ultralytics import YOLO  # YOLOv8 import
+import mediapipe as mp
+from deepface import DeepFace
+import cv2
 
 # 모델 준비
 model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
 processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 yolo_model = YOLO('model/yolov8n.pt')  # 가장 가벼운 YOLOv8 모델 사용
+
+# MediaPipe 얼굴 검출기 초기화
+mp_face_detection = mp.solutions.face_detection
+face_detection = mp_face_detection.FaceDetection(min_detection_confidence=0.5)
 
 def detect_objects(image_path, conf=0.3):
     """
@@ -67,6 +44,49 @@ def get_clip_embedding_from_pil(pil_img):
         image_features = model.get_image_features(**inputs)
     return image_features[0].cpu().numpy()
 
+def detect_faces(image_path):
+    """
+    이미지에서 얼굴 검출 (MediaPipe 사용)
+    return: [(xmin, ymin, xmax, ymax, face_embedding), ...]
+    """
+    # 이미지 읽기
+    image = cv2.imread(image_path)
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    height, width = image.shape[:2]
+    
+    # 얼굴 검출
+    results = face_detection.process(image_rgb)
+    faces = []
+    
+    if results.detections:
+        for detection in results.detections:
+            bbox = detection.location_data.relative_bounding_box
+            xmin = int(bbox.xmin * width)
+            ymin = int(bbox.ymin * height)
+            xmax = int((bbox.xmin + bbox.width) * width)
+            ymax = int((bbox.ymin + bbox.height) * height)
+            
+            # 얼굴 영역 추출
+            face_img = image[ymin:ymax, xmin:xmax]
+            if face_img.size == 0:
+                continue
+                
+            try:
+                # DeepFace로 얼굴 임베딩 추출
+                embedding = DeepFace.represent(face_img, model_name="Facenet", enforce_detection=False)
+                if embedding:
+                    faces.append((xmin, ymin, xmax, ymax, embedding[0]['embedding']))
+            except:
+                continue
+                
+    return faces
+
+def compare_faces(face1_embedding, face2_embedding):
+    """
+    두 얼굴 임베딩 간의 유사도 계산
+    """
+    return np.dot(face1_embedding, face2_embedding) / (np.linalg.norm(face1_embedding) * np.linalg.norm(face2_embedding))
+
 # 비교할 이미지가 들어있는 폴더
 image_folder = "./img"
 image_files = [os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.lower().endswith((".jpg", ".jpeg", ".png"))]
@@ -83,64 +103,71 @@ for img_path in image_files:
         obj_crops.append((crop, emb, box[:4], box[4], box[5]))
     all_image_objects.append((img_path, obj_crops))
 
-# --- 이하: 기준 이미지에서 객체 검출/선택, 유사도 비교, UI 등은 2차로 추가 예정 ---
-
-# 파일 선택창 띄우기
-root = tk.Tk()
-root.withdraw()  # 메인 윈도우 숨기기
+# 기준 이미지 선택
 query_image_path = filedialog.askopenfilename(
     title="기준이 될 이미지를 선택하세요",
     filetypes=[("Image files", "*.jpg *.jpeg *.png")]
 )
-root.destroy()  # 파일 선택 후 Tk 윈도우 완전히 닫기
 
 if not query_image_path:
     print("이미지를 선택하지 않았습니다. 프로그램을 종료합니다.")
     exit()
 
-# 유사도 기준값 설정
-similarity_threshold = 0.6  # 기본값
-
-# 기준 이미지 임베딩
+# 기준 이미지에서 얼굴과 객체 검출
+query_faces = detect_faces(query_image_path)
 query_embedding = get_clip_embedding_from_pil(Image.open(query_image_path).convert("RGB"))
 
 # 각 이미지와의 유사도 계산
 results = []
+
+# 얼굴 유사도 계산
+if query_faces:
+    query_face_embedding = query_faces[0][4]
+    for img_path in image_files:
+        faces = detect_faces(img_path)
+        for face in faces:
+            face_embedding = face[4]
+            similarity = compare_faces(query_face_embedding, face_embedding)
+            results.append((img_path, similarity, "face"))
+
+# 객체 유사도 계산
 for img_path, obj_crops in all_image_objects:
     for crop, emb, box, class_id, conf in obj_crops:
         cosine_similarity = np.dot(query_embedding, emb) / (np.linalg.norm(query_embedding) * np.linalg.norm(emb))
-        results.append((img_path, cosine_similarity))
+        results.append((img_path, cosine_similarity, "object"))
 
 # 유사도 순으로 정렬
 results.sort(key=lambda x: x[1], reverse=True)
 
-# 유사도가 유사도 기준 이상인 이미지 중 가장 유사도가 높은 이미지 하나만 출력
-# (동일 이미지가 여러 객체로 중복될 수 있으니 set으로 중복 제거)
-similar_images = [(img_path, sim) for img_path, sim in results if sim >= similarity_threshold]
-unique_similar = {}
-for img_path, sim in similar_images:
-    if img_path not in unique_similar or sim > unique_similar[img_path]:
-        unique_similar[img_path] = sim
-similar_images = list(unique_similar.items())  # [(img_path, sim), ...]
+# 유사도가 0.6 이상인 결과만 선택
+similar_results = [(img_path, sim, type_) for img_path, sim, type_ in results if sim >= 0.6]
 
-if similar_images:
-    best_img_path, best_sim = max(similar_images, key=lambda x: x[1])
+# 중복 제거 (같은 이미지에 대해 가장 높은 유사도를 가진 결과만 유지)
+unique_similar = {}
+for img_path, sim, type_ in similar_results:
+    if img_path not in unique_similar or sim > unique_similar[img_path][0]:
+        unique_similar[img_path] = (sim, type_)
+
+similar_results = [(img_path, sim, type_) for img_path, (sim, type_) in unique_similar.items()]
+
+if similar_results:
+    best_img_path, best_sim, best_type = max(similar_results, key=lambda x: x[1])
 else:
-    best_img_path, best_sim = max(results, key=lambda x: x[1])
+    best_img_path, best_sim, best_type = max(results, key=lambda x: x[1])
 
 # --- 여기서부터 창 여러 개 띄우기 ---
 popup = tk.Tk()
 popup.title("기준 이미지 vs 유사한 이미지들")
 
 # 안내 문구 결정
-if similar_images:
+if similar_results:
     msg = "이 이미지와 유사한 이미지들입니다!"
 else:
     msg = "일치하는 이미지가 없습니다."
 
 # 안내 문구 라벨 추가
 msg_label = tk.Label(popup, text=msg, font=("Arial", 16, "bold"), fg="blue")
-msg_label.grid(row=0, column=0, columnspan=max(2, len(similar_images)), pady=(10, 0))
+msg_label.grid(row=0, column=0, columnspan=max(2, len(similar_results)), pady=(10, 0))
 
 # 기준 이미지
 query_img = Image.open(query_image_path).resize((256, 256))
@@ -154,14 +181,19 @@ img_refs = [query_img_tk]  # 이미지 참조 유지
 # 유사한 이미지들 (원본 전체)
 IMAGES_PER_ROW = 4  # 한 줄에 최대 4장
 
-if similar_images:
-    for idx, (img_path, sim) in enumerate(similar_images):
+if similar_results:
+    display_images = similar_results
+else:
+    display_images = []
+
+if display_images:
+    for idx, (img_path, sim, type_) in enumerate(display_images):
         img = Image.open(img_path).resize((256, 256))
         img_tk = ImageTk.PhotoImage(img)
         label = tk.Label(
             popup,
             image=img_tk,
-            text=f"{os.path.basename(img_path)}\n유사도: {sim:.4f}",
+            text=f"{os.path.basename(img_path)} ({type_})\n유사도: {sim:.4f}",
             compound="top"
         )
         label.image = img_tk
