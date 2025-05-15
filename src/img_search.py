@@ -11,16 +11,19 @@ try:
     import mediapipe as mp
     from deepface import DeepFace
     import cv2
-	import requests
+    import requests
 except ImportError:
-	import sys
-	import subprocess
-	subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--r', '-requirenents.txt'])
+    import sys
+    import subprocess
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--r', '-requirenents.txt'])
 
 # 모델 준비
-model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+# 추가한것
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(device)
 processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-yolo_model = YOLO('model/yolov8n.pt')  # 가장 가벼운 YOLOv8 모델 사용
+yolo_model = YOLO('model/yolov8n.pt')
+yolo_model.to(device)
 
 # MediaPipe 얼굴 검출기 초기화
 mp_face_detection = mp.solutions.face_detection
@@ -32,9 +35,9 @@ def detect_objects(image_path, conf=0.3):
     return: [(xmin, ymin, xmax, ymax, class_id, conf), ...]
     """
     results = yolo_model(image_path, conf=conf)
-    boxes = results[0].boxes.xyxy.cpu().numpy()  # (N, 4)
-    class_ids = results[0].boxes.cls.cpu().numpy()  # (N,)
-    confs = results[0].boxes.conf.cpu().numpy()  # (N,)
+    boxes = results[0].boxes.xyxy.cpu().numpy()
+    class_ids = results[0].boxes.cls.cpu().numpy()
+    confs = results[0].boxes.conf.cpu().numpy()
     return [(*boxes[i], int(class_ids[i]), confs[i]) for i in range(len(boxes))]
 
 def crop_object(image: Image.Image, box):
@@ -47,9 +50,10 @@ def crop_object(image: Image.Image, box):
 
 def get_clip_embedding_from_pil(pil_img):
     inputs = processor(images=pil_img, return_tensors="pt")
+    inputs = {k: v.to(device) for k, v in inputs.items()}  # 입력도 GPU로
     with torch.no_grad():
         image_features = model.get_image_features(**inputs)
-    return image_features[0].cpu().numpy()
+    return image_features[0].cpu().numpy()  # 결과는 numpy로 변환할 때만 cpu로
 
 def detect_faces(image_path):
     """
