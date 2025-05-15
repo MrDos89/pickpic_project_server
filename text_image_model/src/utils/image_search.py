@@ -92,7 +92,7 @@ def find_similar_images_by_clip(text: str, image_dir: str, features_dir: str, si
         })
     return results if results else None
 
-def save_clip_image_features(image_dir: str, features_dir: str):
+def save_clip_image_features(image_dir: str, features_dir: str, batch_size: int = 16):
     try:
         from transformers import SiglipProcessor, SiglipModel
     except ImportError:
@@ -105,24 +105,31 @@ def save_clip_image_features(image_dir: str, features_dir: str):
     os.makedirs(features_dir, exist_ok=True)
     image_files = [f for f in os.listdir(image_dir) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
 
-    for fname in image_files:
-        feature_path = os.path.join(features_dir, fname + ".npy")
-        if os.path.exists(feature_path):
+    for i in range(0, len(image_files), batch_size):
+        batch_filenames = image_files[i:i+batch_size]
+        batch_images = []
+        valid_fnames = []
+        for fname in batch_filenames:
+            feature_path = os.path.join(features_dir, fname + ".npy")
+            if os.path.exists(feature_path):
+                continue
+            img_path = os.path.join(image_dir, fname)
+            try:
+                img = Image.open(img_path).convert('RGB')
+                batch_images.append(img)
+                valid_fnames.append(fname)
+            except Exception as e:
+                print(f"이미지 열기 실패: {fname} ({e})")
+                continue
+        if not batch_images:
             continue
-
-        img_path = os.path.join(image_dir, fname)
-        try:
-            img = Image.open(img_path).convert('RGB')
-        except Exception as e:
-            print(f"이미지 열기 실패: {fname} ({e})")
-            continue
-
-        inputs = processor(images=img, return_tensors="pt").to(device)
+        inputs = processor(images=batch_images, return_tensors="pt", padding=True).to(device)
         with torch.no_grad():
-            image_features = model.get_image_features(**inputs).cpu().numpy()[0]
-
-        np.save(feature_path, image_features)
-        print(f"저장 완료: {feature_path}") 
+            image_features = model.get_image_features(**inputs).cpu().numpy()
+        for fname, feat in zip(valid_fnames, image_features):
+            feature_path = os.path.join(features_dir, fname + ".npy")
+            np.save(feature_path, feat)
+            print(f"저장 완료: {feature_path}")
 
 class SearchQuery(BaseModel):
     text: str
