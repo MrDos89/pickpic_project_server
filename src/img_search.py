@@ -1,17 +1,16 @@
-import os
-from transformers import CLIPProcessor, CLIPModel
-from PIL import Image, ImageTk
-import torch
-import numpy as np
-import tkinter as tk
-from tkinter import filedialog, simpledialog
-from ultralytics import YOLO  # YOLOv8 import
-import mediapipe as mp
-from deepface import DeepFace
-import cv2
-
 # 라이브러리 설치 자동실행
 try:
+    import os
+    from transformers import CLIPProcessor, CLIPModel
+    from PIL import Image, ImageTk
+    import torch
+    import numpy as np
+    import tkinter as tk
+    from tkinter import filedialog, simpledialog
+    from ultralytics import YOLO  # YOLOv8 import
+    import mediapipe as mp
+    from deepface import DeepFace
+    import cv2
 	import requests
 except ImportError:
 	import sys

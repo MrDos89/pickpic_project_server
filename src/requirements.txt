@@ -6,3 +6,4 @@ ultralytics>=8.0.0
 mediapipe>=0.10.0
 deepface>=0.0.79
 opencv-python>=4.8.0 
+tf-keras
