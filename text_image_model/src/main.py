@@ -7,6 +7,14 @@ import sys
 import os
 from src.models import model1, model2
 
+try:
+    import requests
+except ImportError:
+    import sys
+    import subprocess
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'requests'])
+    import requests
+
 app = FastAPI(
     title=API_TITLE,
     description=API_DESCRIPTION,
