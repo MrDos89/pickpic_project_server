@@ -248,18 +248,18 @@ def classify_hand_pose(image):
     for hand_landmarks in results.multi_hand_landmarks:
         lm = hand_landmarks.landmark
 
-        if is_fist(lm):
-            pose_results['Fist'] = True
-        if is_fy(lm):
-            pose_results['FY'] = True
+        # if is_fist(lm):
+        #     pose_results['Fist'] = True
+        # if is_fy(lm):
+        #     pose_results['FY'] = True
         if is_heart(lm, image_height, image_width):
             pose_results['Heart'] = True
         if is_hands(lm):
             pose_results['Hands'] = True
-        if is_military(lm):
-            pose_results['Military'] = True
-        if is_okay(lm):
-            pose_results['Okay'] = True
+        # if is_military(lm):
+        #     pose_results['Military'] = True
+        # if is_okay(lm):
+        #     pose_results['Okay'] = True
         if is_thumbs(lm):
             pose_results['Thumbs'] = True
 
