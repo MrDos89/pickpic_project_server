@@ -10,6 +10,14 @@ import mediapipe as mp
 from deepface import DeepFace
 import cv2
 
+# 라이브러리 설치 자동실행
+try:
+	import requests
+except ImportError:
+	import sys
+	import subprocess
+	subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'requests'])
+
 # 모델 준비
 model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
 processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
@@ -88,7 +96,7 @@ def compare_faces(face1_embedding, face2_embedding):
     return np.dot(face1_embedding, face2_embedding) / (np.linalg.norm(face1_embedding) * np.linalg.norm(face2_embedding))
 
 # 비교할 이미지가 들어있는 폴더
-image_folder = "./img"
+image_folder = "../img"
 image_files = [os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.lower().endswith((".jpg", ".jpeg", ".png"))]
 
 # 각 이미지에서 객체 검출 및 crop, 임베딩 추출
@@ -150,10 +158,12 @@ for img_path, sim, type_ in similar_results:
 
 similar_results = [(img_path, sim, type_) for img_path, (sim, type_) in unique_similar.items()]
 
-if similar_results:
-    best_img_path, best_sim, best_type = max(similar_results, key=lambda x: x[1])
-else:
+if results:
     best_img_path, best_sim, best_type = max(results, key=lambda x: x[1])
+else:
+    print("비교할 결과가 없습니다. (results가 비어있음)")
+    # 필요하다면 프로그램 종료 또는 예외 처리
+    exit()
 
 # --- 여기서부터 창 여러 개 띄우기 ---
 popup = tk.Tk()
