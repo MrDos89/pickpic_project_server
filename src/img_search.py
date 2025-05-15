@@ -11,11 +11,21 @@ try:
     import mediapipe as mp
     from deepface import DeepFace
     import cv2
-    import requests
 except ImportError:
     import sys
     import subprocess
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--r', '-requirenents.txt'])
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', '-requirenents.txt'])
+    import os
+    from transformers import CLIPProcessor, CLIPModel
+    from PIL import Image, ImageTk
+    import torch
+    import numpy as np
+    import tkinter as tk
+    from tkinter import filedialog, simpledialog
+    from ultralytics import YOLO  # YOLOv8 import
+    import mediapipe as mp
+    from deepface import DeepFace
+    import cv2
 
 # 모델 준비
 # 추가한것
