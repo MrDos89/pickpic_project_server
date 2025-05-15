@@ -14,7 +14,7 @@ try:
 except ImportError:
     import sys
     import subprocess
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', '-requirenents.txt'])
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', '-requirements.txt'])
     import os
     from transformers import CLIPProcessor, CLIPModel
     from PIL import Image, ImageTk
@@ -27,13 +27,12 @@ except ImportError:
     from deepface import DeepFace
     import cv2
 
+
 # 모델 준비
-# 추가한것
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = 0 if torch.cuda.is_available() else 'cpu'
+yolo_model = YOLO('img_search_model/yolov8n.pt')
 model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(device)
 processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-yolo_model = YOLO('model/yolov8n.pt')
-yolo_model.to(device)
 
 # MediaPipe 얼굴 검출기 초기화
 mp_face_detection = mp.solutions.face_detection
@@ -44,7 +43,7 @@ def detect_objects(image_path, conf=0.3):
     이미지에서 객체 검출 (YOLOv8)
     return: [(xmin, ymin, xmax, ymax, class_id, conf), ...]
     """
-    results = yolo_model(image_path, conf=conf)
+    results = yolo_model.predict(image_path, conf=conf, device=device, verbose=False)
     boxes = results[0].boxes.xyxy.cpu().numpy()
     class_ids = results[0].boxes.cls.cpu().numpy()
     confs = results[0].boxes.conf.cpu().numpy()
@@ -94,7 +93,12 @@ def detect_faces(image_path):
                 
             try:
                 # DeepFace로 얼굴 임베딩 추출
-                embedding = DeepFace.represent(face_img, model_name="Facenet", enforce_detection=False)
+                embedding = DeepFace.represent(
+                face_img,
+                model_name="Facenet",
+                enforce_detection=False,
+                detector_backend="skip",
+                device_name="cuda")
                 if embedding:
                     faces.append((xmin, ymin, xmax, ymax, embedding[0]['embedding']))
             except:
