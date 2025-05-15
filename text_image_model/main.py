@@ -6,7 +6,7 @@ try:
     from core.config import API_TITLE, API_DESCRIPTION, API_VERSION
     import sys
     import os
-    from models import model1, model2
+    from models import model
 except ImportError:
     import sys
     import subprocess
@@ -17,7 +17,7 @@ except ImportError:
     from api.v1.pose_detection import router as pose_detection_router
     from core.config import API_TITLE, API_DESCRIPTION, API_VERSION
     import os
-    from models import model1, model2
+    from models import model
 
 app = FastAPI(
     title=API_TITLE,
