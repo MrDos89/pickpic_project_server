@@ -36,11 +36,11 @@ async def detect_pose(user_folder: str, query: PoseDetectQuery):
             image_path = str(user_data_dir / image_name)
             try:
                 # pose_type에 따라 분류 함수 호출
-                if query.pose_type == "v":
+                if query.pose_type == "브이":
                     result, _ = detector.detect_v_pose(image_path)
-                elif query.pose_type == "heart":
+                elif query.pose_type == "하트":
                     result, _ = detector.detect_heart(image_path)
-                elif query.pose_type == "thumbs":
+                elif query.pose_type == "최고":
                     result, _ = detector.detect_thumbs(image_path)
                 elif query.pose_type in ["body", "만세", "점프", "서있음", "앉음", "누워있음"]:
                     model_path = str(Path(__file__).parent.parent / "pose_detection_model" / "yolov8n-pose.pt")
@@ -86,7 +86,7 @@ async def detect_pose(user_folder: str, query: PoseDetectQuery):
 @router.get("/pose-types")
 async def get_pose_types():
     return {
-        "pose_types": ["v", "heart", "thumbs","만세","점프","서있음","앉음","누워있음"]
+        "pose_types": ["브이", "하트", "최고","만세","점프","서있음","앉음","누워있음"]
         # fist, military, okay 포즈 타입 추가
     }
 

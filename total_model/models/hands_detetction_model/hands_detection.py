@@ -205,11 +205,10 @@ def is_hands(lm):
 #         return False
 
 def is_thumbs(lm):
-    # lm: list of landmarks (normalized)
-    # 엄지 끝과 관절 위치 비교 + 나머지 손가락 접힘 확인
     wrist = lm[mp_hands.HandLandmark.WRIST]
     thumb_tip = lm[mp_hands.HandLandmark.THUMB_TIP]
     thumb_ip = lm[mp_hands.HandLandmark.THUMB_IP]
+    thumb_mcp = lm[mp_hands.HandLandmark.THUMB_MCP]
 
     index_tip = lm[mp_hands.HandLandmark.INDEX_FINGER_TIP]
     index_pip = lm[mp_hands.HandLandmark.INDEX_FINGER_PIP]
@@ -220,13 +219,28 @@ def is_thumbs(lm):
     pinky_tip = lm[mp_hands.HandLandmark.PINKY_TIP]
     pinky_pip = lm[mp_hands.HandLandmark.PINKY_PIP]
 
-    thumb_up = thumb_tip.y < thumb_ip.y and thumb_tip.y < wrist.y
+    # 엄지 방향 벡터 계산 (thumb_mcp → thumb_tip)
+    thumb_vec = [
+        thumb_tip.x - thumb_mcp.x,
+        thumb_tip.y - thumb_mcp.y,
+        thumb_tip.z - thumb_mcp.z,
+    ]
+
+    # 손목에서 위쪽 방향 (y축 기준)
+    upward_vec = [0, -1, 0]
+
+    # 엄지 방향이 위쪽인지 판단 (약 50도 이하)
+    angle = distance(thumb_vec, upward_vec)
+    thumb_up = angle < math.radians(50)
+
+    # 다른 손가락이 접혀 있는지 확인
     fingers_folded = (
         index_tip.y > index_pip.y and
         middle_tip.y > middle_pip.y and
         ring_tip.y > ring_pip.y and
         pinky_tip.y > pinky_pip.y
     )
+
     return thumb_up and fingers_folded
 
 def classify_hand_pose(image):
@@ -270,9 +284,9 @@ def get_pose_func_map():
     키워드는 소문자로 통일
     """
     return {
-        "heart": lambda lm, h, w: is_heart(lm, h, w),
-        "v": lambda lm, h, w: is_hands(lm),
-        "thumbs": lambda lm, h, w: is_thumbs(lm),
+        "하트": lambda lm, h, w: is_heart(lm, h, w),
+        "브이": lambda lm, h, w: is_hands(lm),
+        "최고": lambda lm, h, w: is_thumbs(lm),
         # "fist": lambda lm, h, w: is_fist(lm),  # 주석 해제 시 사용
         # "okay": lambda lm, h, w: is_okay(lm),
         # "fy": lambda lm, h, w: is_fy(lm),
@@ -297,6 +311,9 @@ def detect_pose_by_keyword(image, keyword):
         return False
     for hand_landmarks in results.multi_hand_landmarks:
         lm = hand_landmarks.landmark
+        print("detect_thumbs에서 lm type:", type(lm), "len:", len(lm))
+        if is_thumbs(lm):
+            return "최고", image
         if func(lm, image_height, image_width):
             return True
     return False
