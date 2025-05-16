@@ -12,44 +12,65 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.io.IOException;
 
 public class ImageSearchApi {
 
     private static final String SERVER_URL = "http://localhost:8000";
 
-    public static @NotNull String searchByText(String query) throws Exception {
+    public static @NotNull String searchByText(String folder, String query) throws Exception {
         // 요청 URL 설정
-        URL url = new URL(SERVER_URL + "/api/v1/search");
+        URL url = new URL(SERVER_URL + "/api/v1/search/" + folder);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
+        
         // 요청 설정
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setRequestProperty("Accept", "application/json");
         conn.setDoOutput(true);
-
+        
         // 요청 바디 설정
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("text", query);
-
+        requestBody.put("similarity_threshold", "0.23");
+        requestBody.put("detail", "false");
         // JSON 직렬화
         String jsonBody = new Gson().toJson(requestBody);
-
+        
         // 요청 전송
         try (OutputStream os = conn.getOutputStream()) {
             byte[] input = jsonBody.getBytes(StandardCharsets.UTF_8);
             os.write(input, 0, input.length);
         }
-
-        // 응답 받기
-        try (BufferedReader br = new BufferedReader(
-                new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-            return br.lines()
-                    .map(String::trim)
-                    .collect(Collectors.joining());
-
-        } finally {
-            conn.disconnect();
+        
+        // 응답 코드 확인
+        int responseCode = conn.getResponseCode();
+        
+        try {
+            // 정상 응답인 경우 (2xx)
+            if (responseCode >= 200 && responseCode < 300) {
+                try (BufferedReader br = new BufferedReader(
+                        new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                    return br.lines()
+                            .map(String::trim)
+                            .collect(Collectors.joining());
+                }
+            } else {
+                // 오류 응답인 경우 - 오류 내용 읽기
+                try (BufferedReader br = new BufferedReader(
+                        new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
+                    String errorResponse = br.lines()
+                            .map(String::trim)
+                            .collect(Collectors.joining());
+                
+                // 오류 응답을 포함한 예외 발생
+                throw new IOException("서버 응답 코드: " + responseCode + 
+                                    " URL: " + url + 
+                                    " 응답 내용: " + errorResponse);
+            }
         }
+    } finally {
+        conn.disconnect();
     }
+}
 }
