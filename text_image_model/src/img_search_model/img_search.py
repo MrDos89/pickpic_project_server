@@ -34,7 +34,8 @@ print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
 # 모델 준비
 device = 0 if torch.cuda.is_available() else 'cpu'
-yolo_model = YOLO('img_search_model/yolov8n.pt')
+# !! 모델 경로 자동 생성 및 yolo 모델 다운.
+yolo_model = YOLO('yolov8n.pt')
 model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(device)
 processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 mp_face_detection = mp.solutions.face_detection
