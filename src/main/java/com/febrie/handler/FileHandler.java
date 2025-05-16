@@ -76,7 +76,7 @@ public class FileHandler implements HttpHandler {
         try {
             for (JsonElement json : jsons)
                 FileManager.saveBase64ImageToFile(json.getAsJsonObject().get("image_data").getAsString(),
-                        json.getAsJsonObject().get("ssid").getAsString() + "/" + json.getAsJsonObject().get("index").getAsString());
+                        json.getAsJsonObject().get("ssid").getAsString() + "/" + json.getAsJsonObject().get("uid").getAsString());
             HttpUtils.sendResponse(exchange, 200, "이미지 저장 완료: " + jsons.size() + "개");
             Logger.success("이미지 파일 저장 완료 - 총 개수: " + jsons.size());
         } catch (Exception e) {

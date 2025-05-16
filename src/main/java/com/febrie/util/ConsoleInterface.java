@@ -49,7 +49,7 @@ public class ConsoleInterface {
 
             case "test":
                 try {
-                    Logger.request(ImageSearchApi.searchByText("testtest"));
+                    Logger.request(ImageSearchApi.searchByText("강아지"));
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

@@ -19,7 +19,7 @@ public class FileManager {
             Logger.info("이미지 저장 디렉토리 생성: " + directory);
         }
 
-        String filePath = directory + File.separator + fileName;
+        String filePath = directory + fileName;
         File file = new File(filePath);
 
         if (file.exists())

@@ -14,7 +14,7 @@ public class Application {
             ServerManager serverManager = ServerManager.getInstance();
             serverManager.start();
 
-            Logger.info("순수 Java REST API 서버가 포트 " + Config.getPort() + "에서 시작되었습니다!");
+            Logger.info("순수 Java REST API 서버가 포트 " + Config.getPort() + "에서 시작 되었습니다!");
             Logger.info("서버를 종료하려면 'exit' 명령어를 입력하세요.");
             Logger.info("사용 가능한 명령어: 'data' (현재 데이터 보기), 'help' (도움말), 'test' (테스트)");
             ConsoleInterface consoleInterface = new ConsoleInterface(serverManager);

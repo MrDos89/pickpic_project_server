@@ -13,20 +13,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * 이미지 검색 API 호출을 위한 간단한 클래스
- */
 public class ImageSearchApi {
 
     private static final String SERVER_URL = "http://localhost:8000";
 
-    /**
-     * 텍스트로 이미지 검색 API 호출
-     *
-     * @param query 검색할 텍스트 쿼리
-     * @return API 응답 (JSON 문자열)
-     * @throws Exception 통신 오류 발생 시
-     */
     public static @NotNull String searchByText(String query) throws Exception {
         // 요청 URL 설정
         URL url = new URL(SERVER_URL + "/api/v1/search");
