@@ -5,6 +5,7 @@ import uvicorn
 from fastapi import FastAPI
 from models.api.text_to_image_search_end_point import router as image_search_router
 from models.api.pose_detection_end_point import router as pose_detection_router
+from models.api.img_to_img_end_point import router as imgtoimg_router
 import os
 
 # FastAPI 설정
@@ -21,6 +22,7 @@ app = FastAPI(
 # 라우터 등록
 app.include_router(image_search_router, prefix="/api/v1")
 app.include_router(pose_detection_router, prefix="/api/v1/pose")
+app.include_router(imgtoimg_router, prefix="/api/v1/imgtoimg")
 
 # CLI 기반 모델 선택 기능 추가 (기존 main.py 통합)
 def get_base_path():
