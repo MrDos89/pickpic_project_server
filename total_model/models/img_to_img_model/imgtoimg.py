@@ -172,7 +172,7 @@ for img_path, obj_crops in all_image_objects:
 results.sort(key=lambda x: x[1], reverse=True)
 
 # !! 유사도 0.6 이상. 7.5 ~ 6.5 추천
-similar_results = [(img_path, sim, type_) for img_path, sim, type_ in results if sim >= 0.6]
+similar_results = [(img_path, sim, type_) for img_path, sim, type_ in results if sim >= 0.68]
 
 # 중복 제거 (같은 이미지에 대해 가장 높은 유사도를 가진 결과만 유지)
 unique_similar = {}
