@@ -38,7 +38,7 @@ def classify_pose_mediapipe(landmarks):
     #     detected.append("손 모으기 포즈")
 
     jump = (la.y < lh.y - 0.05 and ra.y < rh.y - 0.05) or (la.y < lk.y and ra.y < rk.y) or (abs(la.y - lk.y) < 0.08 and abs(ra.y - rk.y) < 0.08)
-    stand = abs(lh.y - lk.y) < 0.1 and abs(lk.y - la.y) < 0.1 or abs(rh.y - rk.y) < 0.1 and abs(rk.y - ra.y) < 0.1
+    stand = abs(lh.y - lk.y) < 0.13 and abs(lk.y - la.y) < 0.13 or abs(rh.y - rk.y) < 0.13 and abs(rk.y - ra.y) < 0.13
     sit = lh.y > lk.y and rh.y > rk.y
     # lunge = abs(lk.y - rk.y) > 0.2
     lying = max([lw.y, rw.y, ls.y, rs.y, lh.y, rh.y, lk.y, rk.y, la.y, ra.y]) - min([lw.y, rw.y, ls.y, rs.y, lh.y, rh.y, lk.y, rk.y, la.y, ra.y]) < 0.1
