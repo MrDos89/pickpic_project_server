@@ -35,23 +35,17 @@ async def detect_pose(user_folder: str, query: PoseDetectQuery):
             raise HTTPException(status_code=404, detail="이미지 파일을 찾을 수 없습니다.")
 
         # 포즈 타입에 따라 적절한 함수 호출
-        if pose_type == "v":
-            result, processed_image = detector.detect_v_pose(temp_path)
-        # elif pose_type == "fist":
-        #     result, processed_image = detector.detect_fist(temp_path)
-        elif pose_type == "heart":
-            result, processed_image = detector.detect_heart(temp_path)
-        # elif pose_type == "military":
-        #     result, processed_image = detector.detect_military(temp_path)
-        # elif pose_type == "okay":
-        #     result, processed_image = detector.detect_okay(temp_path)
-        elif pose_type == "thumbs":
-            result, processed_image = detector.detect_thumbs(temp_path)
-        elif pose_type in ["body", "만세", "점프", "서있음", "앉음", "누워있음"]:
+        if query.pose_type == "v":
+            result, processed_image = detector.detect_v_pose(image_path)
+        elif query.pose_type == "heart":
+            result, processed_image = detector.detect_heart(image_path)
+        elif query.pose_type == "thumbs":
+            result, processed_image = detector.detect_thumbs(image_path)
+        elif query.pose_type in ["body", "만세", "점프", "서있음", "앉음", "누워있음"]:
             # YOLO로 사람 박스 검출 후 mediapipe로 랜드마크 추출, classify_pose_mediapipe 호출
             model_path = str(Path(__file__).parent.parent / "pose_detection_model" / "yolov8n-pose.pt")
             yolo = YOLO(model_path)
-            img = cv2.imread(temp_path)
+            img = cv2.imread(image_path)
             results = yolo.predict(img, stream=False, verbose=False)
             boxes = results[0].boxes.xyxy.cpu().numpy() if results[0].boxes is not None else []
             if len(boxes) == 0:
@@ -105,7 +99,8 @@ async def detect_pose(user_folder: str, query: PoseDetectQuery):
 @router.get("/pose-types")
 async def get_pose_types():
     return {
-        "pose_types": ["fist", "v", "heart", "military", "okay", "thumbs","만세","점프","서있음","앉음","누워있음"]
+        "pose_types": ["v", "heart", "thumbs","만세","점프","서있음","앉음","누워있음"]
+        # fist, military, okay 포즈 타입 추가
     }
 
 @router.post("/classify-pose/{model_type}")
