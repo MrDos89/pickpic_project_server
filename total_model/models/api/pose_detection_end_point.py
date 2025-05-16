@@ -9,6 +9,7 @@ import mediapipe as mp
 from ultralytics import YOLO
 from pathlib import Path
 from fastapi import HTTPException
+from pydantic import BaseModel
 
 router = APIRouter()
 detector = PoseDetector()
@@ -18,31 +19,20 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 TEMP_DIR = PROJECT_ROOT / "temp"
 
-@router.post("/detect-pose/{user_folder}/{pose_type}")
-async def detect_pose(user_folder: str, pose_type: str, file: UploadFile = File(...)):
-    try:
-        # 사용자별 폴더 경로 설정
-        user_data_dir = DATA_DIR / user_folder
-        user_temp_dir = TEMP_DIR / user_folder
+class PoseDetectQuery(BaseModel):
+    pose_type: str
+    image_name: str
 
-        # 폴더가 존재하는지 확인
+@router.post("/detect-pose/{user_folder}")
+async def detect_pose(user_folder: str, query: PoseDetectQuery):
+    try:
+        user_data_dir = DATA_DIR / user_folder
         if not user_data_dir.exists():
             raise HTTPException(status_code=404, detail=f"유저 폴더를 찾을 수 없습니다: {user_folder}")
-        user_temp_dir.mkdir(parents=True, exist_ok=True)
 
-        # 이미지 파일 읽기
-        contents = await file.read()
-        nparr = np.frombuffer(contents, np.uint8)
-        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        if image is None:
-            return JSONResponse(
-                status_code=400,
-                content={"message": "이미지를 불러올 수 없습니다."}
-            )
-
-        # 사용자별 임시 파일로 저장
-        temp_path = str(user_temp_dir / "temp_image.jpg")
-        cv2.imwrite(temp_path, image)
+        image_path = str(user_data_dir / query.image_name)
+        if not os.path.exists(image_path):
+            raise HTTPException(status_code=404, detail="이미지 파일을 찾을 수 없습니다.")
 
         # 포즈 타입에 따라 적절한 함수 호출
         if pose_type == "v":
@@ -96,13 +86,8 @@ async def detect_pose(user_folder: str, pose_type: str, file: UploadFile = File(
                 content={"message": "지원하지 않는 포즈 타입입니다."}
             )
 
-        # 처리된 이미지를 사용자별 임시 폴더에 저장 (예: result_image.jpg)
-        result_image_path = str(user_temp_dir / "result_image.jpg")
+        result_image_path = str(user_data_dir / "result_image.jpg")
         cv2.imwrite(result_image_path, processed_image)
-
-        # 처리된 이미지를 base64로 인코딩
-        _, buffer = cv2.imencode('.jpg', processed_image)
-        image_base64 = buffer.tobytes()
 
         return {
             "message": result,
@@ -116,10 +101,6 @@ async def detect_pose(user_folder: str, pose_type: str, file: UploadFile = File(
             status_code=500,
             content={"message": f"처리 중 오류가 발생했습니다: {str(e)}"}
         )
-    finally:
-        # 사용자별 임시 파일 삭제 (원하면 주석처리 가능)
-        if 'temp_path' in locals() and os.path.exists(temp_path):
-            os.remove(temp_path)
 
 @router.get("/pose-types")
 async def get_pose_types():
