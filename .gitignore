@@ -129,7 +129,6 @@ checkpoints/
 *.parquet
 
 # Large datasets (you might want to version them with DVC)
-data/
 *.zip
 *.tar.gz
 
