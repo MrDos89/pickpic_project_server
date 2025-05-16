@@ -14,7 +14,7 @@ try:
 except ImportError:
     import sys
     import subprocess
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', '-requirements.txt'])
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt'])
     import os
     from transformers import CLIPProcessor, CLIPModel
     from PIL import Image, ImageTk
@@ -30,7 +30,6 @@ except ImportError:
 # GPU 사용가능 여부 확인. tensorflow GPU가 안되서 넣은것. !! 지워도 무관.
 import tensorflow as tf
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-
 
 # 모델 준비
 device = 0 if torch.cuda.is_available() else 'cpu'
@@ -81,7 +80,7 @@ def detect_faces(image_path):
     height, width = image.shape[:2]
     results = face_detection.process(image_rgb)
     faces = []
-    
+
     if results.detections:
         for detection in results.detections:
             bbox = detection.location_data.relative_bounding_box
@@ -89,24 +88,25 @@ def detect_faces(image_path):
             ymin = int(bbox.ymin * height)
             xmax = int((bbox.xmin + bbox.width) * width)
             ymax = int((bbox.ymin + bbox.height) * height)
-            
+
             # 얼굴 영역 추출
             face_img = image[ymin:ymax, xmin:xmax]
             if face_img.size == 0:
                 continue
-                
+
             try:
                 embedding = DeepFace.represent(
-                face_img,
-                model_name="Facenet",
-                enforce_detection=False,
-                detector_backend="skip",
-                device_name="cuda")
+                    face_img,
+                    model_name="Facenet",
+                    enforce_detection=False,
+                    detector_backend="skip",
+                    device_name="cuda" if torch.cuda.is_available() else "cpu"
+                )
                 if embedding:
                     faces.append((xmin, ymin, xmax, ymax, embedding[0]['embedding']))
             except:
                 continue
-                
+
     return faces
 
 def compare_faces(face1_embedding, face2_embedding):
@@ -115,8 +115,22 @@ def compare_faces(face1_embedding, face2_embedding):
     """
     return np.dot(face1_embedding, face2_embedding) / (np.linalg.norm(face1_embedding) * np.linalg.norm(face2_embedding))
 
+# 기준 이미지 선택
+query_image_path = input("기준이 될 이미지 경로를 입력하세요 (상대경로나 절대경로 가능): ").strip()
+
+if not query_image_path or not os.path.isfile(query_image_path):
+    print("유효한 이미지 경로를 입력하지 않았습니다. 프로그램을 종료합니다.")
+    exit()
+
+# !! 기준 이미지 경로에서 폴더명과 파일명 추출
+query_folder = os.path.basename(os.path.dirname(query_image_path))  # 폴더 이름
+query_filename = os.path.basename(query_image_path)  # 파일 이름
+
+print(f"기준 이미지 폴더: {query_folder}")
+print(f"기준 이미지 이름: {query_filename}")
+
 # !! 비교할 이미지 경로 설정
-image_folder = "../img"
+image_folder = os.path.dirname(query_image_path)
 image_files = [os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.lower().endswith((".jpg", ".jpeg", ".png"))]
 
 # 각 이미지에서 객체 검출 및 crop, 임베딩 추출
@@ -130,15 +144,6 @@ for img_path in image_files:
         emb = get_clip_embedding_from_pil(crop)
         obj_crops.append((crop, emb, box[:4], box[4], box[5]))
     all_image_objects.append((img_path, obj_crops))
-
-query_image_path = filedialog.askopenfilename(
-    title="기준이 될 이미지를 선택하세요",
-    filetypes=[("Image files", "*.jpg *.jpeg *.png")]
-)
-
-if not query_image_path:
-    print("이미지를 선택하지 않았습니다. 프로그램을 종료합니다.")
-    exit()
 
 # 기준 이미지에서 얼굴과 객체 검출
 query_faces = detect_faces(query_image_path)
