@@ -6,7 +6,7 @@ import java.util.Properties;
 
 public class Config {
     private static int PORT = 8080;
-    private static String IMAGE_SAVE_PATH = "C:/Users/201-11/Desktop/Test_Data_Set/";
+    private static String IMAGE_SAVE_PATH = "../pickpic_project_server/total_model/data/";
     private static int THREAD_POOL_SIZE = 10;
     
     private Config() {

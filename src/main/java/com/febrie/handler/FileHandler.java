@@ -1,29 +1,27 @@
 package com.febrie.handler;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import com.febrie.exception.InternalServerException;
 import com.febrie.exception.MethodNotAllowedException;
 import com.febrie.exception.NotFoundException;
 import com.febrie.server.Stats;
-import com.febrie.store.DataStore;
 import com.febrie.util.Config;
 import com.febrie.util.FileManager;
 import com.febrie.util.HttpUtils;
 import com.febrie.util.Logger;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
 
 public class FileHandler implements HttpHandler {
     @Override
-    public void handle(HttpExchange exchange) throws IOException {
+    public void handle(@NotNull HttpExchange exchange) throws IOException {
         long startTime = System.currentTimeMillis();
-        String clientIp = HttpUtils.getClientIp(exchange);
-        String path = exchange.getRequestURI().getPath();
         String method = exchange.getRequestMethod();
 
         Stats.incrementRequestCount();
@@ -61,21 +59,6 @@ public class FileHandler implements HttpHandler {
         } finally {
             long elapsedTime = System.currentTimeMillis() - startTime;
             Logger.info("요청 처리 시간: " + elapsedTime + "ms");
-        }
-    }
-
-    private void handleEmptyKeyRequest(HttpExchange exchange, String method) throws IOException, MethodNotAllowedException {
-        if (method.equals("GET")) {
-            StringBuilder response = new StringBuilder();
-            DataStore.getInstance().forEach((key, value) -> {
-                response.append(key).append(": ").append(value).append("\n");
-            });
-
-            String responseStr = response.toString();
-            HttpUtils.sendResponse(exchange, 200, responseStr);
-            Logger.success("모든 데이터 조회 완료 - " + DataStore.getInstance().size() + "개 항목");
-        } else {
-            throw new MethodNotAllowedException("허용되지 않는 메서드입니다. GET만 사용 가능합니다.");
         }
     }
 

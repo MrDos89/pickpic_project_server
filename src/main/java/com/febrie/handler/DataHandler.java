@@ -12,8 +12,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
-public class ApiHandler implements HttpHandler {
+public class DataHandler implements HttpHandler {
     @Override
     public void handle(@NotNull HttpExchange exchange) throws IOException {
         long startTime = System.currentTimeMillis();
@@ -22,10 +23,10 @@ public class ApiHandler implements HttpHandler {
         Stats.incrementRequestCount();
 
         String[] uri = exchange.getRequestURI().toString().split("/");
-
+        String key = uri[2];
         try {
             if (method.equals("GET")) {
-                handleGetRequest(exchange, uri[2]);
+                handleGetRequest(exchange, key, Arrays.copyOfRange(uri, 2, uri.length));
             } else {
                 throw new MethodNotAllowedException("허용되지 않는 메서드입니다");
             }
@@ -44,9 +45,24 @@ public class ApiHandler implements HttpHandler {
         }
     }
 
-    private void handleGetRequest(HttpExchange exchange, String key) throws IOException, NotFoundException {
+    private void handleGetRequest(HttpExchange exchange, @NotNull String key, String[] data) throws IOException, NotFoundException {
         File[] files = new File(Config.getImageSavePath()).listFiles();
-        int value = files == null ? 0 : files.length;;
+        int value = files == null ? 0 : files.length;
+        switch (key) {
+            case "pose" -> {
+
+            }
+            case "txt2img" -> {
+
+            }
+            case "img2img" -> {
+
+            }
+            default -> {
+                HttpUtils.sendResponse(exchange, 400, "잘못된 요청입니다.");
+                Logger.error("잘못된 요청. \n없는 파라미터: " + key);
+            }
+        }
         HttpUtils.sendResponse(exchange, 200, String.valueOf(value));
         Logger.success("데이터 조회 완료 - 값 길이: " + value + "개");
     }

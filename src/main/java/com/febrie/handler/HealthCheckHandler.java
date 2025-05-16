@@ -1,8 +1,8 @@
 package com.febrie.handler;
 
+import com.febrie.data.DataManager;
 import com.febrie.exception.MethodNotAllowedException;
 import com.febrie.server.Stats;
-import com.febrie.store.DataStore;
 import com.febrie.util.Config;
 import com.febrie.util.HttpUtils;
 import com.febrie.util.Logger;
@@ -57,7 +57,7 @@ public class HealthCheckHandler implements HttpHandler {
                 "OS: " + System.getProperty("os.name") + " " + System.getProperty("os.version") + "\n" +
                 "요청 수: " + Stats.getRequestCount() + "\n" +
                 "포트: " + Config.getPort() + "\n" +
-                "데이터 항목 수: " + DataStore.getInstance().size() + "\n" +
+                "데이터 항목 수: " + DataManager.getFolders() + "\n" +
                 "메모리 사용량: " + formatMemoryUsage() + "\n" +
                 "프로세서 수: " + Runtime.getRuntime().availableProcessors() + "\n" +
                 "시스템 부하: " + String.format("%.2f", osMXBean.getSystemLoadAverage()) + "\n" +
