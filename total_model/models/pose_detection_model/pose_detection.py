@@ -109,7 +109,24 @@ def main():
 class PoseDetector:
     def __init__(self):
         pass
-    # 필요한 메서드 추가    
+
+    def detect_v_pose(self, image_path):
+        import cv2
+        image = cv2.imread(image_path)
+        result = "V 포즈 감지 결과 예시"
+        return result, image
+
+    def detect_heart(self, image_path):
+        import cv2
+        image = cv2.imread(image_path)
+        result = "하트 포즈 감지 결과 예시"
+        return result, image
+
+    def detect_thumbs(self, image_path):
+        import cv2
+        image = cv2.imread(image_path)
+        result = "엄지 포즈 감지 결과 예시"
+        return result, image    
 
 if __name__ == "__main__":
     main()

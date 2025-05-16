@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import JSONResponse
 import cv2
@@ -72,8 +73,7 @@ async def detect_pose(user_folder: str, pose_type: str, file: UploadFile = File(
 
         return {
             "message": result,
-            "image": image_base64,
-            "result_image_path": result_image_path
+            "result_image_name": os.path.basename(result_image_path)
         }
 
     except HTTPException as e:
@@ -85,7 +85,6 @@ async def detect_pose(user_folder: str, pose_type: str, file: UploadFile = File(
         )
     finally:
         # 사용자별 임시 파일 삭제 (원하면 주석처리 가능)
-        import os
         if 'temp_path' in locals() and os.path.exists(temp_path):
             os.remove(temp_path)
 
