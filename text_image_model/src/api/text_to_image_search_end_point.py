@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict
-from ..text_image_model.image_search import find_similar_images_by_clip, save_clip_image_features
+from src.text_image_model.text_to_image_model import find_similar_images_by_clip, save_clip_image_features
 import os
 import sys
 from pathlib import Path
@@ -25,16 +25,24 @@ class SearchResponse(BaseModel):
     matched_images: int
     results: List[Dict]
 
-@router.post("/search", response_model=SearchResponse)
-async def search_images(query: SearchQuery):
+@router.post("/search/{user_folder}", response_model=SearchResponse)
+async def search_images(user_folder: str, query: SearchQuery):
     try:
+        # 유저 데이터 폴더 경로 설정
+        user_data_dir = DATA_DIR / user_folder
+        user_temp_dir = TEMP_DIR / user_folder
+
+        # 폴더가 존재하는지 확인
+        if not user_data_dir.exists():
+            raise HTTPException(status_code=404, detail=f"유저 폴더를 찾을 수 없습니다: {user_folder}")
+        
         # 전체 이미지 개수 계산
-        total_images = len([f for f in os.listdir(DATA_DIR) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
+        total_images = len([f for f in os.listdir(user_data_dir) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
         
         results = find_similar_images_by_clip(
             query.text,
-            DATA_DIR,
-            TEMP_DIR,
+            str(user_data_dir),
+            str(user_temp_dir),
             similarity_threshold=query.similarity_threshold
         )
         
@@ -49,25 +57,38 @@ async def search_images(query: SearchQuery):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/update-features")
-async def update_features():
+@router.post("/search/{user_folder}/update-features")
+async def update_features(user_folder: str):
     try:
-        save_clip_image_features(DATA_DIR, TEMP_DIR)
+        user_data_dir = DATA_DIR / user_folder
+        user_temp_dir = TEMP_DIR / user_folder
+
+        if not user_data_dir.exists():
+            raise HTTPException(status_code=404, detail=f"유저 폴더를 찾을 수 없습니다: {user_folder}")
+
+        save_clip_image_features(str(user_data_dir), str(user_temp_dir))
         return {"message": "이미지 특징 벡터가 업데이트되었습니다."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/search", response_model=SearchResponse)
+@router.get("/search/{user_folder}", response_model=SearchResponse)
 async def search_images_get(
+    user_folder: str,
     text: str,
     similarity_threshold: float = SIMILARITY_THRESHOLD
 ):
     try:
-        total_images = len([f for f in os.listdir(DATA_DIR) if f.lower().endswith((".jpg", ".jpeg", ".png"))])
+        user_data_dir = DATA_DIR / user_folder
+        user_temp_dir = TEMP_DIR / user_folder
+
+        if not user_data_dir.exists():
+            raise HTTPException(status_code=404, detail=f"유저 폴더를 찾을 수 없습니다: {user_folder}")
+
+        total_images = len([f for f in os.listdir(user_data_dir) if f.lower().endswith((".jpg", ".jpeg", ".png"))])
         results = find_similar_images_by_clip(
             text,
-            DATA_DIR,
-            TEMP_DIR,
+            str(user_data_dir),
+            str(user_temp_dir),
             similarity_threshold=similarity_threshold
         )
         if not results:
