@@ -13,7 +13,7 @@ DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 TEMP_DIR = os.path.join(PROJECT_ROOT, "temp")
 
 # 유사도 임계값 (기본값)
-SIMILARITY_THRESHOLD = 0.2
+SIMILARITY_THRESHOLD = 0.25
 
 def find_similar_images_by_clip(text: str, image_dir: str, features_dir: str, similarity_threshold: float = 0.0, detail: bool = False) -> Optional[List[dict]]:
     """
@@ -38,6 +38,15 @@ def find_similar_images_by_clip(text: str, image_dir: str, features_dir: str, si
     if not feature_files:
         return None
 
+    # npy 임베딩을 한 번에 numpy 배열로 로드 (벡터화)
+    img_features = []
+    img_filenames = []
+    for f in feature_files:
+        arr = np.load(os.path.join(features_dir, f))
+        img_features.append(arr)
+        img_filenames.append(f.replace('.npy', ''))
+    img_features = np.stack(img_features, axis=0)  # shape: (N, 512)
+
     # 여러 키워드로 분리 및 번역
     keywords = text.strip().split()
     translator = Translator()
@@ -49,23 +58,32 @@ def find_similar_images_by_clip(text: str, image_dir: str, features_dir: str, si
         except Exception:
             translated_keywords.append(kw)  # 번역 실패시 원본 사용
 
-    # 이미지별로 {파일명: [(원본키워드, 번역키워드, 유사도), ...]} 저장
-    image_keyword_scores = dict()
-
-    for idx, keyword in enumerate(translated_keywords):
+    # 텍스트 임베딩도 모두 미리 구해서 벡터화
+    text_embeds = []
+    for keyword in translated_keywords:
         inputs = processor(text=[keyword], return_tensors="pt", padding=True).to(device)
         with torch.no_grad():
             text_features = model.get_text_features(**inputs).cpu().numpy()[0]
+        text_embeds.append(text_features)
+    text_embeds = np.stack(text_embeds, axis=0)  # shape: (K, 512)
 
-        for feat_file in feature_files:
-            img_feature = np.load(os.path.join(features_dir, feat_file))
-            sim = np.dot(text_features, img_feature) / (np.linalg.norm(text_features) * np.linalg.norm(img_feature))
+    # 유사도 계산 (브로드캐스팅)
+    # img_features: (N, 512), text_embeds: (K, 512)
+    img_norms = np.linalg.norm(img_features, axis=1, keepdims=True)  # (N, 1)
+    text_norms = np.linalg.norm(text_embeds, axis=1, keepdims=True)  # (K, 1)
+    # (K, N): 각 텍스트 임베딩과 모든 이미지 임베딩의 유사도
+    sims = np.dot(text_embeds, img_features.T) / (text_norms * img_norms.T + 1e-8)
+
+    # 이미지별로 {파일명: [(원본키워드, 번역키워드, 유사도), ...]} 저장
+    image_keyword_scores = dict()
+    for k_idx, keyword in enumerate(keywords):
+        for n_idx, fname in enumerate(img_filenames):
+            sim = sims[k_idx, n_idx]
             if sim < similarity_threshold:
                 continue
-            fname = feat_file.replace('.npy', '')
             if fname not in image_keyword_scores:
                 image_keyword_scores[fname] = []
-            image_keyword_scores[fname].append((keywords[idx], keyword, sim))
+            image_keyword_scores[fname].append((keyword, translated_keywords[k_idx], sim))
 
     # 정렬: 1) 매칭 키워드 개수 내림차순, 2) 유사도 합 내림차순
     sorted_images = sorted(
