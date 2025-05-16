@@ -10,23 +10,18 @@ import mediapipe as mp
 from deepface import DeepFace
 import cv2
 import shutil
+from pathlib import Path
 
 router = APIRouter()
 
 # 모델 준비
-# device = 0 if torch.cuda.is_available() else 'cpu'  # FastAPI 환경에서는 int 대신 str 권장
-if torch.cuda.is_available():
-    device = 'cuda'
-else:
-    device = 'cpu'
-
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 yolo_model = YOLO('yolov8n.pt')
 model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(device)
 processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 mp_face_detection = mp.solutions.face_detection
 face_detection = mp_face_detection.FaceDetection(min_detection_confidence=0.5)
 
-# Yolo 객체 탐지
 def detect_objects(image_path, conf=0.3):
     results = yolo_model.predict(image_path, conf=conf, device=device, verbose=False)
     boxes = results[0].boxes.xyxy.cpu().numpy()
@@ -77,19 +72,30 @@ def detect_faces(image_path):
 def compare_faces(face1_embedding, face2_embedding):
     return np.dot(face1_embedding, face2_embedding) / (np.linalg.norm(face1_embedding) * np.linalg.norm(face2_embedding))
 
-# 임시 이미지 저장 경로
-temp_dir = "temp/imgtoimg_uploads"
-os.makedirs(temp_dir, exist_ok=True)
+# 업로드 엔드포인트 (data/{user_folder}에 저장)
+@router.post("/imgtoimg/upload/{user_folder}")
+async def upload_imgtoimg(user_folder: str, file: UploadFile = File(...)):
+    save_dir = Path("data") / user_folder
+    save_dir.mkdir(parents=True, exist_ok=True)
+    file_path = save_dir / file.filename
+    with open(file_path, "wb") as f:
+        f.write(await file.read())
+    return {"message": "업로드 완료", "filename": file.filename}
 
-@router.post("/imgtoimg/search")
-def img_to_img_search(query_img: UploadFile = File(...)):
-    # 업로드 파일 저장
+# 검색 엔드포인트 (data/{user_folder} 내 이미지들과 업로드 쿼리 이미지 비교)
+@router.post("/imgtoimg/search/{user_folder}")
+def img_to_img_search(user_folder: str, query_img: UploadFile = File(...)):
+    # 업로드 파일 저장 (임시)
+    temp_dir = "temp/imgtoimg_uploads"
+    os.makedirs(temp_dir, exist_ok=True)
     query_img_path = os.path.join(temp_dir, query_img.filename)
     with open(query_img_path, "wb") as f:
         shutil.copyfileobj(query_img.file, f)
 
-    # 비교 대상 이미지 폴더 (예시: ../img)
-    image_folder = "../img"
+    # 비교 대상 이미지 폴더를 data/{user_folder}로 변경
+    image_folder = os.path.join("data", user_folder)
+    if not os.path.exists(image_folder):
+        raise HTTPException(status_code=404, detail=f"유저 폴더를 찾을 수 없습니다: {user_folder}")
     image_files = [os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.lower().endswith((".jpg", ".jpeg", ".png"))]
     if not image_files:
         raise HTTPException(status_code=404, detail="비교할 이미지가 없습니다.")
