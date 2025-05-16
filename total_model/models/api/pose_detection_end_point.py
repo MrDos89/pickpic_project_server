@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 import cv2
 import numpy as np
 from ..pose_detection_model import PoseDetector
-from ..pose_detection_model import model
+from ..pose_detection_model import pose_detection
 import mediapipe as mp
 from ultralytics import YOLO
 from pathlib import Path
@@ -104,7 +104,7 @@ async def classify_pose_api(model_type: str, file: UploadFile = File(...)):
         return JSONResponse(status_code=400, content={"message": "이미지를 불러올 수 없습니다."})
     try:
         # model_type 구분 없이 model.py의 classify/ensemble 함수만 사용
-        result_text = model.classify_pose_ensemble(image)
+        result_text = pose_detection.classify_pose_ensemble(image)
         return {"result": result_text}
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": f"처리 중 오류가 발생했습니다: {str(e)}"}) 

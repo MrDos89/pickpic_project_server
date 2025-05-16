@@ -1,4 +1,4 @@
-from .model import PoseDetector
+from .pose_detection import PoseDetector
 
 __all__ = ['PoseDetector']
 
