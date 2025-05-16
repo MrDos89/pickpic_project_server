@@ -10,3 +10,4 @@ opencv-python==4.8.1.78
 mediapipe==0.10.21
 numpy==1.26.3 
 ultralytics>=8.0.0
+python-multipart>=0.0.6
