@@ -3,8 +3,8 @@ import subprocess
 subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt'])
 import uvicorn
 from fastapi import FastAPI
-from src.api.text_to_image_search_end_point import router as image_search_router
-from src.api.pose_detection_end_point import router as pose_detection_router
+from models.api.text_to_image_search_end_point import router as image_search_router
+from models.api.pose_detection_end_point import router as pose_detection_router
 import os
 
 # FastAPI 설정
