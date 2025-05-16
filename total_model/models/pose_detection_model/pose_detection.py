@@ -25,7 +25,7 @@ def classify_pose_mediapipe(landmarks):
 
     detected = []
     if lw.y < nose.y and rw.y < nose.y:
-        detected.append("만세 포즈")
+        detected.append("만세")
     # if (lw.y < ls.y and rw.y >= rs.y) or (rw.y < rs.y and lw.y >= ls.y):
     #     detected.append("손 흔들기 포즈")
     # shoulder_width = abs(rs.x - ls.x)
@@ -44,15 +44,15 @@ def classify_pose_mediapipe(landmarks):
     lying = max([lw.y, rw.y, ls.y, rs.y, lh.y, rh.y, lk.y, rk.y, la.y, ra.y]) - min([lw.y, rw.y, ls.y, rs.y, lh.y, rh.y, lk.y, rk.y, la.y, ra.y]) < 0.1
 
     if jump:
-        detected.append("점프샷 포즈")
+        detected.append("점프")
     elif stand:
-        detected.append("서있는 포즈")
+        detected.append("서있음")
     elif sit:
-        detected.append("앉은 포즈")
+        detected.append("앉음")
     # elif lunge:
     #     detected.append("런지 / 스트레칭 포즈")
     elif lying:
-        detected.append("누워있는 포즈")
+        detected.append("누워있음")
 
     return ", ".join(detected) + "입니다!" if detected else "일반 포즈 (미분류)입니다."
 
@@ -106,27 +106,57 @@ def main():
             break
 
     cv2.destroyAllWindows()
+
 class PoseDetector:
     def __init__(self):
         pass
 
     def detect_v_pose(self, image_path):
-        import cv2
         image = cv2.imread(image_path)
         result = "V 포즈 감지 결과 예시"
         return result, image
 
     def detect_heart(self, image_path):
-        import cv2
         image = cv2.imread(image_path)
         result = "하트 포즈 감지 결과 예시"
         return result, image
 
     def detect_thumbs(self, image_path):
-        import cv2
         image = cv2.imread(image_path)
         result = "엄지 포즈 감지 결과 예시"
-        return result, image    
+        return result, image
+
+    def detect_body_pose(self, image_path):
+        model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "yolov8n-pose.pt")
+        yolo = YOLO(model_path)
+        img = cv2.imread(image_path)
+        if img is None:
+            return "이미지를 불러올 수 없습니다.", np.zeros((256, 256, 3), dtype=np.uint8)
+        results = yolo.predict(img, stream=False, verbose=False)
+        boxes = results[0].boxes.xyxy.cpu().numpy() if results[0].boxes is not None else []
+        if len(boxes) == 0:
+            return "사람이 감지되지 않았습니다.", img
+        result_texts = []
+        img_result = img.copy()
+        with mp_pose.Pose(static_image_mode=True, model_complexity=2) as pose:
+            for idx, box in enumerate(boxes):
+                x1, y1, x2, y2 = box.astype(int)
+                x1, y1 = max(0, x1), max(0, y1)
+                x2, y2 = min(img.shape[1], x2), min(img.shape[0], y2)
+                person_crop = img[y1:y2, x1:x2]
+                if person_crop.size == 0:
+                    result_texts.append(f"사람 {idx+1}: 박스 크기 오류")
+                    continue
+                person_rgb = cv2.cvtColor(person_crop, cv2.COLOR_BGR2RGB)
+                results_mp = pose.process(person_rgb)
+                if results_mp.pose_landmarks:
+                    pose_result = classify_pose_mediapipe(results_mp.pose_landmarks.landmark)
+                    result_texts.append(f"사람 {idx+1}: {pose_result}")
+                    mp_drawing.draw_landmarks(person_crop, results_mp.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+                    img_result[y1:y2, x1:x2] = person_crop
+                else:
+                    result_texts.append(f"사람 {idx+1}: 포즈 인식 실패")
+        return " | ".join(result_texts), img_result
 
 if __name__ == "__main__":
     main()

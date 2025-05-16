@@ -57,6 +57,39 @@ async def detect_pose(user_folder: str, pose_type: str, file: UploadFile = File(
         #     result, processed_image = detector.detect_okay(temp_path)
         elif pose_type == "thumbs":
             result, processed_image = detector.detect_thumbs(temp_path)
+        elif pose_type in ["body", "만세", "점프", "서있음", "앉음", "누워있음"]:
+            # YOLO로 사람 박스 검출 후 mediapipe로 랜드마크 추출, classify_pose_mediapipe 호출
+            model_path = str(Path(__file__).parent.parent / "pose_detection_model" / "yolov8n-pose.pt")
+            yolo = YOLO(model_path)
+            img = cv2.imread(temp_path)
+            results = yolo.predict(img, stream=False, verbose=False)
+            boxes = results[0].boxes.xyxy.cpu().numpy() if results[0].boxes is not None else []
+            if len(boxes) == 0:
+                result = "사람이 감지되지 않았습니다."
+                processed_image = img
+            else:
+                result_texts = []
+                img_result = img.copy()
+                with mp.solutions.pose.Pose(static_image_mode=True, model_complexity=2) as pose:
+                    for idx, box in enumerate(boxes):
+                        x1, y1, x2, y2 = box.astype(int)
+                        x1, y1 = max(0, x1), max(0, y1)
+                        x2, y2 = min(img.shape[1], x2), min(img.shape[0], y2)
+                        person_crop = img[y1:y2, x1:x2]
+                        if person_crop.size == 0:
+                            result_texts.append(f"사람 {idx+1}: 박스 크기 오류")
+                            continue
+                        person_rgb = cv2.cvtColor(person_crop, cv2.COLOR_BGR2RGB)
+                        results_mp = pose.process(person_rgb)
+                        if results_mp.pose_landmarks:
+                            pose_result = pose_detection.classify_pose_mediapipe(results_mp.pose_landmarks.landmark)
+                            result_texts.append(f"사람 {idx+1}: {pose_result}")
+                            mp.solutions.drawing_utils.draw_landmarks(person_crop, results_mp.pose_landmarks, mp.solutions.pose.POSE_CONNECTIONS)
+                            img_result[y1:y2, x1:x2] = person_crop
+                        else:
+                            result_texts.append(f"사람 {idx+1}: 포즈 인식 실패")
+                result = " | ".join(result_texts)
+                processed_image = img_result
         else:
             return JSONResponse(
                 status_code=400,
@@ -91,7 +124,7 @@ async def detect_pose(user_folder: str, pose_type: str, file: UploadFile = File(
 @router.get("/pose-types")
 async def get_pose_types():
     return {
-        "pose_types": ["fist", "v", "heart", "military", "okay", "thumbs"]
+        "pose_types": ["fist", "v", "heart", "military", "okay", "thumbs","만세","점프","서있음","앉음","누워있음"]
     }
 
 @router.post("/classify-pose/{model_type}")
