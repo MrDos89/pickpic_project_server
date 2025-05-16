@@ -12,13 +12,14 @@ DATA_DIR = PROJECT_ROOT / "data"
 TEMP_DIR = PROJECT_ROOT / "temp"
 
 # 이미지 검색 설정
-SIMILARITY_THRESHOLD = 0.066
+SIMILARITY_THRESHOLD = 0.2
 
 router = APIRouter()
 
 class SearchQuery(BaseModel):
     text: str
     similarity_threshold: Optional[float] = SIMILARITY_THRESHOLD
+    detail: Optional[bool] = False
 
 class SearchResponse(BaseModel):
     total_images: int
@@ -42,7 +43,8 @@ async def search_images(user_folder: str, query: SearchQuery):
             query.text,
             str(user_data_dir),
             str(user_temp_dir),
-            similarity_threshold=query.similarity_threshold
+            similarity_threshold=query.similarity_threshold,
+            detail=query.detail if query.detail is not None else False
         )
         if not results:
             raise HTTPException(status_code=404, detail="유사한 이미지를 찾을 수 없습니다.")

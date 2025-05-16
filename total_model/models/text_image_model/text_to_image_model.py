@@ -13,15 +13,15 @@ DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 TEMP_DIR = os.path.join(PROJECT_ROOT, "temp")
 
 # 유사도 임계값 (기본값)
-SIMILARITY_THRESHOLD = 0.0
+SIMILARITY_THRESHOLD = 0.2
 
-def find_similar_images_by_clip(text: str, image_dir: str, features_dir: str, similarity_threshold: float = 0.0) -> Optional[List[dict]]:
+def find_similar_images_by_clip(text: str, image_dir: str, features_dir: str, similarity_threshold: float = 0.0, detail: bool = False) -> Optional[List[dict]]:
     """
     띄어쓰기로 구분된 여러 키워드가 들어오면 각 키워드별로 영어로 번역 후 따로 검색해서
     모든 키워드에 해당하는 이미지를 반환 (중복 제거, 유사도는 최대값)
     """
     try:
-        from transformers import SiglipProcessor, SiglipModel
+        from transformers import CLIPProcessor, CLIPModel
     except ImportError:
         raise ImportError('transformers, torch 패키지가 필요합니다.')
     try:
@@ -30,8 +30,8 @@ def find_similar_images_by_clip(text: str, image_dir: str, features_dir: str, si
         raise ImportError('googletrans 패키지가 필요합니다. (pip install googletrans==4.0.0-rc1)')
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model = SiglipModel.from_pretrained('google/siglip-so400m-patch14-384').to(device)
-    processor = SiglipProcessor.from_pretrained('google/siglip-so400m-patch14-384', use_fast=True)
+    model = CLIPModel.from_pretrained('openai/clip-vit-base-patch32').to(device)
+    processor = CLIPProcessor.from_pretrained('openai/clip-vit-base-patch32')
 
     # 이미지 임베딩(.npy) 파일 목록
     feature_files = [f for f in os.listdir(features_dir) if f.endswith('.npy')]
@@ -79,28 +79,31 @@ def find_similar_images_by_clip(text: str, image_dir: str, features_dir: str, si
         img_path = os.path.join(image_dir, fname)
         if not os.path.exists(img_path):
             continue
-        with open(img_path, 'rb') as f:
-            img_base64 = base64.b64encode(f.read()).decode('utf-8')
-        results.append({
-            'filename': fname,
-            'base64': img_base64,
-            'matched_keywords': [m[0] for m in matches],
-            'translated_keywords': [m[1] for m in matches],
-            'scores': [float(m[2]) for m in matches],
-            'matched_count': len(matches),
-            'score_sum': float(sum([m[2] for m in matches]))
-        })
+        if detail:
+            with open(img_path, 'rb') as f:
+                img_base64 = base64.b64encode(f.read()).decode('utf-8')
+            results.append({
+                'filename': fname,
+                'base64': img_base64,
+                'matched_keywords': [m[0] for m in matches],
+                'translated_keywords': [m[1] for m in matches],
+                'scores': [float(m[2]) for m in matches],
+                'matched_count': len(matches),
+                'score_sum': float(sum([m[2] for m in matches]))
+            })
+        else:
+            results.append({'filename': fname})
     return results if results else None
 
 def save_clip_image_features(image_dir: str, features_dir: str, batch_size: int = 16):
     try:
-        from transformers import SiglipProcessor, SiglipModel
+        from transformers import CLIPProcessor, CLIPModel
     except ImportError:
         raise ImportError('transformers, torch 패키지가 필요합니다.')
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model = SiglipModel.from_pretrained('google/siglip-so400m-patch14-384').to(device)
-    processor = SiglipProcessor.from_pretrained('google/siglip-so400m-patch14-384', use_fast=True)
+    model = CLIPModel.from_pretrained('openai/clip-vit-base-patch32').to(device)
+    processor = CLIPProcessor.from_pretrained('openai/clip-vit-base-patch32')
 
     os.makedirs(features_dir, exist_ok=True)
     image_files = [f for f in os.listdir(image_dir) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
