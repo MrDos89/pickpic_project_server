@@ -73,7 +73,7 @@ def compare_faces(face1_embedding, face2_embedding):
     return np.dot(face1_embedding, face2_embedding) / (np.linalg.norm(face1_embedding) * np.linalg.norm(face2_embedding))
 
 # 업로드 엔드포인트 (data/{user_folder}에 저장)
-@router.post("/imgtoimg/upload/{user_folder}")
+@router.post("/upload/{user_folder}")
 async def upload_imgtoimg(user_folder: str, file: UploadFile = File(...)):
     save_dir = Path("data") / user_folder
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -83,7 +83,7 @@ async def upload_imgtoimg(user_folder: str, file: UploadFile = File(...)):
     return {"message": "업로드 완료", "filename": file.filename}
 
 # 파일명만 받아서 검색하는 엔드포인트 (application/json)
-@router.post("/imgtoimg/search/{user_folder}")
+@router.post("/search/{user_folder}")
 def img_to_img_search(user_folder: str, image_name: str = Body(..., embed=True)):
     # 쿼리 이미지 경로
     image_folder = os.path.join("data", user_folder)
