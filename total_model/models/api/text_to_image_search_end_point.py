@@ -12,7 +12,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 TEMP_DIR = PROJECT_ROOT / "temp"
 
 # 이미지 검색 설정
-SIMILARITY_THRESHOLD = 0.2
+SIMILARITY_THRESHOLD = 0.25
 
 router = APIRouter()
 

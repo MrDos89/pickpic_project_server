@@ -138,4 +138,5 @@ def img_to_img_search(user_folder: str, query_img: UploadFile = File(...)):
     for r in results:
         if r["img_path"] not in unique or r["similarity"] > unique[r["img_path"]]["similarity"]:
             unique[r["img_path"]] = r
-    return list(unique.values()) 
+    # filename만 리스트로 반환
+    return [os.path.basename(img_path) for img_path in unique.keys()] 
