@@ -72,7 +72,6 @@ public class FileHandler implements HttpHandler {
     private void handlePostPutRequest(HttpExchange exchange) throws IOException {
         String jsonString = HttpUtils.readRequestBody(exchange);
         JsonArray jsons = JsonParser.parseString(jsonString).getAsJsonObject().getAsJsonArray("images");
-
         try {
             for (JsonElement json : jsons)
                 FileManager.saveBase64ImageToFile(json.getAsJsonObject().get("image_data").getAsString(),

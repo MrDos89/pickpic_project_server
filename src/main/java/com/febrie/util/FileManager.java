@@ -14,20 +14,15 @@ public class FileManager {
         String directory = Config.getImageSavePath();
         Path dirPath = Paths.get(directory);
 
-        if (!Files.exists(dirPath)) {
-            Files.createDirectories(dirPath);
-            Logger.info("이미지 저장 디렉토리 생성: " + directory);
-        }
-
+        if (Files.exists(dirPath)) dirPath.toFile().delete();
+        Files.createDirectories(dirPath);
+        Logger.info("이미지 저장 디렉토리 생성: " + directory);
         String filePath = directory + fileName;
         File file = new File(filePath);
 
-        if (file.exists())
-            file.delete();
+        if (file.exists()) file.delete();
 
-        if (!file.exists())
-            if (!file.getParentFile().exists())
-                file.getParentFile().mkdirs();
+        if (!file.exists()) if (!file.getParentFile().exists()) file.getParentFile().mkdirs();
 
         try {
             byte[] imageData = Base64.getDecoder().decode(base64Image);
