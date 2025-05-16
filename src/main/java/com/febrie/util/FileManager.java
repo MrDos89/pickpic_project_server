@@ -19,29 +19,21 @@ public class FileManager {
             Logger.info("이미지 저장 디렉토리 생성: " + directory);
         }
 
-        if (!fileName.toLowerCase().endsWith(".jpg")) {
-            fileName = fileName + ".jpg";
-        }
-
         String filePath = directory + File.separator + fileName;
         File file = new File(filePath);
 
-        if (file.exists()) {
+        if (file.exists())
             file.delete();
-        }
 
-        if (!file.exists()) {
+        if (!file.exists())
             if (!file.getParentFile().exists())
                 file.getParentFile().mkdirs();
-        }
 
         try {
             byte[] imageData = Base64.getDecoder().decode(base64Image);
-
             try (FileOutputStream fos = new FileOutputStream(filePath)) {
                 fos.write(imageData);
             }
-
             Logger.success("이미지 파일 저장 완료: " + filePath);
         } catch (IllegalArgumentException e) {
             Logger.error("잘못된 Base64 형식: " + e.getMessage());

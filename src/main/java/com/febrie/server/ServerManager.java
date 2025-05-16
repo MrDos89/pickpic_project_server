@@ -1,6 +1,6 @@
 package com.febrie.server;
 
-import com.febrie.handler.ApiHandler;
+import com.febrie.handler.DataHandler;
 import com.febrie.handler.FileHandler;
 import com.febrie.handler.HealthCheckHandler;
 import com.febrie.util.Config;
@@ -25,7 +25,7 @@ public class ServerManager {
         server.setExecutor(Executors.newFixedThreadPool(Config.getThreadPoolSize()));
 
         server.createContext("/file", new FileHandler());
-        server.createContext("/api", new ApiHandler());
+        server.createContext("/data", new DataHandler());
         server.createContext("/health", new HealthCheckHandler());
 
         Logger.info("서버가 포트 " + Config.getPort() + "에 생성되었습니다");
