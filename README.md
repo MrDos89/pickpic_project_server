@@ -9,17 +9,12 @@
 
 ## 엔드포인트
 
-### GET /file
-모든 저장된 데이터 조회
-
-### GET /file/{key}
-특정 키의 데이터 조회
-
 ### POST /file/{key}
 Base64로 인코딩된 이미지 저장
 
-### DELETE /api/{key}
-특정 키의 데이터 삭제
+### POST /data/txt2img
+#### json body: ssid(유저 고유값), keyword(검색어)
+해당 폴더의 해당 검색어 검색 후 결과 반환
 
 ### GET /health
 서버 상태 확인

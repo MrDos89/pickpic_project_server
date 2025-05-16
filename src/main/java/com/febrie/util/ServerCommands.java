@@ -3,8 +3,6 @@ package com.febrie.util;
 import com.febrie.data.DataManager;
 import com.febrie.server.Stats;
 
-import java.io.File;
-
 public class ServerCommands {
 
     public static void printHelp() {
@@ -18,12 +16,11 @@ public class ServerCommands {
 
     public static void printCurrentData() {
         Logger.info("===== 현재 저장된 데이터 =====");
-        File mainDirectory = new File(Config.getImageSavePath());
         int amount = DataManager.getFolders();
         if (amount == 0) {
             Logger.info("저장된 데이터가 없습니다.");
         } else {
-            Logger.info("총 " + amount + "개 항목");
+            Logger.info("총 " + amount + "폴더, " + DataManager.getFiles() + "개의 항목");
         }
     }
 

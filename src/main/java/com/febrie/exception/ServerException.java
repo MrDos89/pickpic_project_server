@@ -1,5 +1,8 @@
 package com.febrie.exception;
 
+import lombok.Getter;
+
+@Getter
 public class ServerException extends RuntimeException {
     private final int statusCode;
     
@@ -12,8 +15,5 @@ public class ServerException extends RuntimeException {
         super(message, cause);
         this.statusCode = statusCode;
     }
-    
-    public int getStatusCode() {
-        return statusCode;
-    }
+
 }

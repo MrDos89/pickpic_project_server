@@ -1,7 +1,7 @@
 package com.febrie.util;
 
-import com.febrie.api.ImageSearchApi;
 import com.febrie.server.ServerManager;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Scanner;
 
@@ -29,7 +29,7 @@ public class ConsoleInterface {
         scanner.close();
     }
 
-    private void processCommand(String command) {
+    private void processCommand(@NotNull String command) {
         switch (command.toLowerCase()) {
             case "help":
                 ServerCommands.printHelp();
@@ -45,14 +45,6 @@ public class ConsoleInterface {
 
             case "stats":
                 ServerCommands.printServerStats();
-                break;
-
-            case "test":
-                try {
-                    Logger.request(ImageSearchApi.searchByText("강아지"));
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
                 break;
 
             case "":
