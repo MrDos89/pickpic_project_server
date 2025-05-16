@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict
-from src.text_image_model.text_to_image_model import find_similar_images_by_clip, save_clip_image_features
+from models.text_image_model.text_to_image_model import find_similar_images_by_clip, save_clip_image_features
 import os
 import sys
 from pathlib import Path

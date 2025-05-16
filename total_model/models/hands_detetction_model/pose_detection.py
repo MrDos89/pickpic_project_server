@@ -88,7 +88,6 @@ def is_heart(lm, image_height, image_width):
     # 손가락 하트 또는 볼 하트
     return is_finger_heart or (thumb_index_dist < 0.05 and is_cheek_position)
 
-
 def is_hands(lm):
     def calculate_distance(p1, p2):
         return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
@@ -264,3 +263,40 @@ def classify_hand_pose(image):
             pose_results['Thumbs'] = True
 
     return pose_results
+
+def get_pose_func_map():
+    """
+    포즈 키워드와 판별 함수 매핑 딕셔너리 반환
+    키워드는 소문자로 통일
+    """
+    return {
+        "heart": lambda lm, h, w: is_heart(lm, h, w),
+        "v": lambda lm, h, w: is_hands(lm),
+        "thumbs": lambda lm, h, w: is_thumbs(lm),
+        # "fist": lambda lm, h, w: is_fist(lm),  # 주석 해제 시 사용
+        # "okay": lambda lm, h, w: is_okay(lm),
+        # "fy": lambda lm, h, w: is_fy(lm),
+        # "military": lambda lm, h, w: is_military(lm),
+    }
+
+
+def detect_pose_by_keyword(image, keyword):
+    """
+    image: BGR np.ndarray (cv2.imread 결과)
+    keyword: 판별할 포즈 키워드 (소문자)
+    return: True/False (해당 포즈 감지 여부)
+    """
+    image_height, image_width = image.shape[:2]
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = hands.process(image_rgb)
+    if not results.multi_hand_landmarks:
+        return False
+    pose_func_map = get_pose_func_map()
+    func = pose_func_map.get(keyword.lower())
+    if func is None:
+        return False
+    for hand_landmarks in results.multi_hand_landmarks:
+        lm = hand_landmarks.landmark
+        if func(lm, image_height, image_width):
+            return True
+    return False
