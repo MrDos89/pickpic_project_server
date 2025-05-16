@@ -11,3 +11,5 @@ mediapipe==0.10.21
 numpy==1.26.3 
 ultralytics>=8.0.0
 python-multipart>=0.0.6
+deepface>=0.0.79
+tensorflow>=2.15.0
