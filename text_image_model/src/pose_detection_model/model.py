@@ -106,6 +106,10 @@ def main():
             break
 
     cv2.destroyAllWindows()
+class PoseDetector:
+    def __init__(self):
+        pass
+    # 필요한 메서드 추가    
 
 if __name__ == "__main__":
     main()
