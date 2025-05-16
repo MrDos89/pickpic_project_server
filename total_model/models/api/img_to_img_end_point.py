@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Body
 from typing import List
 import os
 from PIL import Image
@@ -82,18 +82,14 @@ async def upload_imgtoimg(user_folder: str, file: UploadFile = File(...)):
         f.write(await file.read())
     return {"message": "업로드 완료", "filename": file.filename}
 
-# 검색 엔드포인트 (data/{user_folder} 내 이미지들과 업로드 쿼리 이미지 비교)
+# 파일명만 받아서 검색하는 엔드포인트 (application/json)
 @router.post("/imgtoimg/search/{user_folder}")
-def img_to_img_search(user_folder: str, query_img: UploadFile = File(...)):
-    # 업로드 파일 저장 (임시)
-    temp_dir = "temp/imgtoimg_uploads"
-    os.makedirs(temp_dir, exist_ok=True)
-    query_img_path = os.path.join(temp_dir, query_img.filename)
-    with open(query_img_path, "wb") as f:
-        shutil.copyfileobj(query_img.file, f)
-
-    # 비교 대상 이미지 폴더를 data/{user_folder}로 변경
+def img_to_img_search(user_folder: str, image_name: str = Body(..., embed=True)):
+    # 쿼리 이미지 경로
     image_folder = os.path.join("data", user_folder)
+    query_img_path = os.path.join(image_folder, image_name)
+    if not os.path.exists(query_img_path):
+        raise HTTPException(status_code=404, detail=f"쿼리 이미지 파일을 찾을 수 없습니다: {query_img_path}")
     if not os.path.exists(image_folder):
         raise HTTPException(status_code=404, detail=f"유저 폴더를 찾을 수 없습니다: {user_folder}")
     image_files = [os.path.join(image_folder, f) for f in os.listdir(image_folder) if f.lower().endswith((".jpg", ".jpeg", ".png"))]
