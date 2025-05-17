@@ -75,7 +75,7 @@ async def detect_pose(user_folder: str, query: PoseDetectQuery):
                     matched_images.append(image_name)
             except Exception:
                 continue
-        return {"image_names": matched_images}
+        return {"results": matched_images}
     except HTTPException as e:
         raise e
     except Exception as e:
