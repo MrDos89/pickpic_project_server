@@ -10,19 +10,21 @@ import java.util.Base64;
 
 public class FileManager {
 
+    @SuppressWarnings("ignored")
     public static void saveBase64ImageToFile(String base64Image, String fileName) throws IOException {
         String directory = Config.getImageSavePath();
         Path dirPath = Paths.get(directory);
 
-        if (Files.exists(dirPath)) dirPath.toFile().delete();
+        if (Files.exists(dirPath)) if (!dirPath.toFile().delete()) throw new IOException("파일이 없습니다");
         Files.createDirectories(dirPath);
         Logger.info("이미지 저장 디렉토리 생성: " + directory);
         String filePath = directory + fileName;
         File file = new File(filePath);
 
-        if (file.exists()) file.delete();
+        if (file.exists()) if (!file.delete()) throw new IOException("파일이 없습니다");
 
-        if (!file.exists()) if (!file.getParentFile().exists()) file.getParentFile().mkdirs();
+        if (!file.exists())
+            if (!file.getParentFile().exists()) if (file.getParentFile().mkdirs()) Logger.info("유저 폴더 생성");
 
         try {
             byte[] imageData = Base64.getDecoder().decode(base64Image);

@@ -48,9 +48,8 @@ public class FileHandler implements HttpHandler {
             HttpUtils.sendResponse(exchange, e.getStatusCode(), e.getMessage());
             Logger.warning(e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
-            HttpUtils.sendResponse(exchange, 500, "서버 오류: " + e.getMessage());
-            Logger.error("서버 오류 발생: " + e.getMessage());
+            HttpUtils.sendResponse(exchange, 500, "서버 오류: " + e);
+            Logger.error("서버 오류 발생: " + e);
         } finally {
             long elapsedTime = System.currentTimeMillis() - startTime;
             Logger.info("요청 처리 시간: " + elapsedTime + "ms");
@@ -79,12 +78,16 @@ public class FileHandler implements HttpHandler {
     private void handleDeleteRequest(HttpExchange exchange, String ssid) throws IOException, NotFoundException {
         File file = new File(Config.getImageSavePath() + ssid + "/");
         if (file.exists()) {
-            file.delete();
-            HttpUtils.sendResponse(exchange, 200, "삭제 완료: " + file.getPath());
-            Logger.success("파일 삭제 완료: " + file.getPath());
+            if (file.delete()) {
+                HttpUtils.sendResponse(exchange, 200, "삭제 완료: " + file.getPath());
+                Logger.success("파일 삭제 완료: " + file.getPath());
+            } else {
+                HttpUtils.sendResponse(exchange, 400, "삭제 실패");
+                Logger.success("파일 삭제 실패");
+            }
         } else {
             HttpUtils.sendResponse(exchange, 404, "삭제할 파일이 없음");
-            Logger.error("삭제할");
+            Logger.error("삭제할 파일이 없음");
         }
     }
 }

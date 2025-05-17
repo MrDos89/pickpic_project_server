@@ -1,5 +1,8 @@
 package com.febrie.util;
 
+import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -31,17 +34,18 @@ public class Logger {
     public static void error(String message) {
         log(LogType.ERROR, message);
     }
-    
+
     public static void debug(String message) {
         log(LogType.DEBUG, message);
     }
 
-    private static void log(LogType type, String message) {
+    private static void log(@NotNull LogType type, String message) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
         String timestamp = sdf.format(new Date());
         System.out.println(type.getColor() + "[" + timestamp + "] " + type.getPrefix() + ": " + message + ANSI_RESET);
     }
 
+    @Getter
     enum LogType {
         REQUEST(ANSI_BLUE, "요청"),
         SUCCESS(ANSI_GREEN, "성공"),
@@ -58,12 +62,5 @@ public class Logger {
             this.prefix = prefix;
         }
 
-        public String getColor() {
-            return color;
-        }
-
-        public String getPrefix() {
-            return prefix;
-        }
     }
 }

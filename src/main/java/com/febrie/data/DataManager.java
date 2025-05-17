@@ -1,7 +1,6 @@
 package com.febrie.data;
 
 import com.febrie.util.Config;
-import com.febrie.util.Logger;
 
 import java.io.File;
 import java.util.Arrays;
