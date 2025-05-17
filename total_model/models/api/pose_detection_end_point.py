@@ -3,8 +3,8 @@ from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import JSONResponse
 import cv2
 import numpy as np
-from ..pose_detection_model import PoseDetector
-from ..pose_detection_model import pose_detection
+from ..pose_detection_model22 import PoseDetector
+from ..pose_detection_model22 import pose_detection
 import mediapipe as mp
 from ultralytics import YOLO
 from pathlib import Path
