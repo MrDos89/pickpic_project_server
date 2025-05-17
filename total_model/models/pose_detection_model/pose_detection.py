@@ -3,6 +3,9 @@ import cv2
 import numpy as np
 import mediapipe as mp
 from ultralytics import YOLO
+import os
+from ..hands_detection_model.hands_detection import is_hands, is_heart, is_thumbs
+
 
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
@@ -109,22 +112,57 @@ def main():
 
 class PoseDetector:
     def __init__(self):
-        pass
+        mp_hands = mp.solutions.hands
+        self.hands = mp_hands.Hands(static_image_mode=True, max_num_hands=2, min_detection_confidence=0.5)
 
     def detect_v_pose(self, image_path):
         image = cv2.imread(image_path)
-        result = "V 포즈 감지 결과 예시"
-        return result, image
+        if image is None:
+            return "이미지 없음", None
+        mp_hands = mp.solutions.hands
+        with mp_hands.Hands(static_image_mode=True, max_num_hands=2, min_detection_confidence=0.5) as hands:
+            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            results = hands.process(image_rgb)
+            if not results.multi_hand_landmarks:
+                return "not found", image
+            for hand_landmarks in results.multi_hand_landmarks:
+                lm = hand_landmarks.landmark
+                if is_hands(lm):
+                    return "브이", image
+        return "not found", image
 
     def detect_heart(self, image_path):
         image = cv2.imread(image_path)
-        result = "하트 포즈 감지 결과 예시"
-        return result, image
+        if image is None:
+            return "이미지 없음", None
+        mp_hands = mp.solutions.hands
+        with mp_hands.Hands(static_image_mode=True, max_num_hands=2, min_detection_confidence=0.5) as hands:
+            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            results = hands.process(image_rgb)
+            if not results.multi_hand_landmarks:
+                return "not found", image
+            for hand_landmarks in results.multi_hand_landmarks:
+                lm = hand_landmarks.landmark
+                if is_heart(lm, image.shape[0], image.shape[1]):
+                    return "하트", image
+        return "not found", image
 
     def detect_thumbs(self, image_path):
         image = cv2.imread(image_path)
-        result = "엄지 포즈 감지 결과 예시"
-        return result, image
+        if image is None:
+            return "이미지 없음", None
+        mp_hands = mp.solutions.hands
+        with mp_hands.Hands(static_image_mode=True, max_num_hands=2, min_detection_confidence=0.5) as hands:
+            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            results = hands.process(image_rgb)
+            if not results.multi_hand_landmarks:
+                return "not found", image
+            for hand_landmarks in results.multi_hand_landmarks:
+                lm = hand_landmarks.landmark
+                if is_thumbs(lm):
+                    return "최고", image
+        return "not found", image
+
 
     def detect_body_pose(self, image_path):
         model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "yolov8n-pose.pt")

@@ -60,7 +60,15 @@ def distance(p1, p2):
 #     return is_middle_extended and are_others_folded
 
 def is_heart(lm, image_height, image_width):
-    # 기본 하트 조건: 엄지와 검지가 가까움
+    # ---- Finger Heart 조건 ----
+    # if isinstance(lm, list):  # 두 손이 들어온 경우 (multi_hand_landmarks)
+    #     heart_hands = [hand for hand in lm if is_heart(hand)]
+    #     if len(heart_hands) >= 2:
+    #         return "하트"
+    #     else:
+    #         return "하트 아님"
+
+    # 단일 손 기준
     thumb_tip = lm[mp_hands.HandLandmark.THUMB_TIP]
     index_tip = lm[mp_hands.HandLandmark.INDEX_FINGER_TIP]
     middle_tip = lm[mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
@@ -68,25 +76,29 @@ def is_heart(lm, image_height, image_width):
     pinky_tip = lm[mp_hands.HandLandmark.PINKY_TIP]
 
     thumb_index_dist = distance(thumb_tip, index_tip)
-
-    # 다른 손가락이 접혀있는지 확인
     other_folded = (
         middle_tip.y > lm[mp_hands.HandLandmark.MIDDLE_FINGER_PIP].y and
         ring_tip.y > lm[mp_hands.HandLandmark.RING_FINGER_PIP].y and
         pinky_tip.y > lm[mp_hands.HandLandmark.PINKY_PIP].y
     )
 
-    is_finger_heart = thumb_index_dist < 0.05 and other_folded
+    if thumb_index_dist < 0.04 and other_folded:
+        return "하트"  # 손가락 하트
 
-    # 얼굴 근처인지 판단
-    hand_position = lm[mp_hands.HandLandmark.WRIST]
-    hand_y = hand_position.y * image_height
-    index_tip_y = index_tip.y * image_height
+    # ---- Cheek Heart 조건 ----
+    if image_height is not None and image_width is not None:
+        hand_y = lm[mp_hands.HandLandmark.WRIST].y * image_height
+        index_tip_y = index_tip.y * image_height
 
-    is_cheek_position = hand_y < image_height * 0.5 and index_tip_y < image_height * 0.5
+        if (
+            thumb_index_dist < 0.06 and
+            hand_y < image_height * 0.5 and
+            index_tip_y < image_height * 0.5
+        ):
+            return "하트"  # 볼 하트
 
-    # 손가락 하트 또는 볼 하트
-    return is_finger_heart or (thumb_index_dist < 0.05 and is_cheek_position)
+    return "하트 아님"
+   
 
 def is_hands(lm):
     def calculate_distance(p1, p2):
@@ -225,21 +237,26 @@ def is_thumbs(lm):
         thumb_tip.y - thumb_mcp.y,
         thumb_tip.z - thumb_mcp.z,
     ]
-
-    # 손목에서 위쪽 방향 (y축 기준)
     upward_vec = [0, -1, 0]
 
-    # 엄지 방향이 위쪽인지 판단 (약 50도 이하)
-    angle = distance(thumb_vec, upward_vec)
-    thumb_up = angle < math.radians(50)
+    # 각도 계산 함수 추가
+    def vector_angle(v1, v2):
+        dot = sum(a*b for a, b in zip(v1, v2))
+        norm1 = math.sqrt(sum(a*a for a in v1))
+        norm2 = math.sqrt(sum(a*a for a in v2))
+        cos_theta = dot / (norm1 * norm2 + 1e-6)
+        return math.acos(max(min(cos_theta, 1), -1))
 
-    # 다른 손가락이 접혀 있는지 확인
-    fingers_folded = (
-        index_tip.y > index_pip.y and
-        middle_tip.y > middle_pip.y and
-        ring_tip.y > ring_pip.y and
-        pinky_tip.y > pinky_pip.y
-    )
+    angle = vector_angle(thumb_vec, upward_vec)
+    thumb_up = angle < math.radians(70)  # 50도 → 70도
+
+    # 다른 손가락이 접혀 있는지 (2개 이상만 접혀도 인정)
+    folded_count = 0
+    if index_tip.y > index_pip.y: folded_count += 1
+    if middle_tip.y > middle_pip.y: folded_count += 1
+    if ring_tip.y > ring_pip.y: folded_count += 1
+    if pinky_tip.y > pinky_pip.y: folded_count += 1
+    fingers_folded = folded_count >= 2
 
     return thumb_up and fingers_folded
 
@@ -304,16 +321,18 @@ def detect_pose_by_keyword(image, keyword):
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = hands.process(image_rgb)
     if not results.multi_hand_landmarks:
+        print("손 인식 실패:", keyword)
         return False
     pose_func_map = get_pose_func_map()
     func = pose_func_map.get(keyword.lower())
     if func is None:
+        print("키워드 매칭 실패:", keyword)
         return False
     for hand_landmarks in results.multi_hand_landmarks:
         lm = hand_landmarks.landmark
-        print("detect_thumbs에서 lm type:", type(lm), "len:", len(lm))
-        if is_thumbs(lm):
-            return "최고", image
+        print("landmark 개수:", len(lm))
         if func(lm, image_height, image_width):
+            print("포즈 감지 성공:", keyword)
             return True
+    print("포즈 감지 실패:", keyword)
     return False

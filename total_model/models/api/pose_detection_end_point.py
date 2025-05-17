@@ -69,6 +69,7 @@ async def detect_pose(user_folder: str, query: PoseDetectQuery):
                     continue
                 else:
                     continue
+                print(image_name, result)
                 # pose_type이 결과에 포함되어 있으면 추가
                 if query.pose_type in result:
                     matched_images.append(image_name)
