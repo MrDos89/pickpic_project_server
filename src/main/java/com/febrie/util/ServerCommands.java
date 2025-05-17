@@ -1,7 +1,6 @@
 package com.febrie.util;
 
 import com.febrie.data.DataManager;
-import com.febrie.server.Stats;
 
 public class ServerCommands {
 
@@ -27,8 +26,8 @@ public class ServerCommands {
     public static void printServerStats() {
         Logger.info("===== 서버 상태 정보 =====");
         Logger.info("포트: " + Config.getPort());
-        Logger.info("처리된 요청 수: " + Stats.getRequestCount());
-        Logger.info("데이터 항목 수: " + DataManager.getFolders());
+        Logger.info("유저 폴더 수: " + DataManager.getFolders());
+        Logger.info("전체 파일 수: " + DataManager.getFiles());
         Logger.info("실행 중인 스레드 수: " + Thread.activeCount());
 
         long usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024 * 1024);

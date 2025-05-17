@@ -1,9 +1,8 @@
 package com.febrie.handler;
 
-import com.febrie.api.ImageSearchApi;
+import com.febrie.api.ModelApi;
 import com.febrie.exception.MethodNotAllowedException;
 import com.febrie.exception.NotFoundException;
-import com.febrie.server.Stats;
 import com.febrie.util.HttpUtils;
 import com.febrie.util.Logger;
 import com.google.gson.JsonArray;
@@ -22,8 +21,6 @@ public class DataHandler implements HttpHandler {
         long startTime = System.currentTimeMillis();
         String method = exchange.getRequestMethod();
 
-        Stats.incrementRequestCount();
-
         String[] uri = exchange.getRequestURI().toString().split("/");
         String key = uri[2];
 
@@ -40,8 +37,8 @@ public class DataHandler implements HttpHandler {
             HttpUtils.sendResponse(exchange, e.getStatusCode(), e.getMessage());
             Logger.warning(e.getMessage());
         } catch (Exception e) {
-            HttpUtils.sendResponse(exchange, 500, "서버 오류: " + e.getMessage());
-            Logger.error("서버 오류 발생: " + e.getMessage());
+            HttpUtils.sendResponse(exchange, 500, "서버 오류: " + e);
+            Logger.error("서버 오류 발생: " + e);
         } finally {
             long elapsedTime = System.currentTimeMillis() - startTime;
             Logger.info("요청 처리 시간: " + elapsedTime + "ms");
@@ -50,31 +47,40 @@ public class DataHandler implements HttpHandler {
 
     private void handlePostRequest(HttpExchange exchange, @NotNull String key, String data) throws IOException, NotFoundException {
         JsonObject datajson = JsonParser.parseString(data).getAsJsonObject();
+        String ssid = datajson.get("ssid").getAsString();
         JsonElement json;
         switch (key) {
             case "pose" -> {
-
+                try {
+                    json = JsonParser.parseString(ModelApi.getImageByPoses(ssid,
+                            datajson.get("pose").getAsString()));
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
             case "txt2img" -> {
                 try {
-                    json = JsonParser.parseString(ImageSearchApi.searchByText(datajson.get("ssid").getAsString(),
+                    json = JsonParser.parseString(ModelApi.searchByText(ssid,
                             datajson.get("keyword").getAsString()));
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-                JsonArray array = json.getAsJsonObject().getAsJsonArray("results");
-                JsonObject results = new JsonObject();
-                results.add("results", array);
-                HttpUtils.sendResponse(exchange, 200, results.toString());
-                Logger.success("데이터 조회 완료 - 값 길이: " + array.size() + "개");
             }
             case "img2img" -> {
-
+                try {
+                    json = JsonParser.parseString(ModelApi.searchByImage(ssid, datajson.get("image_name").getAsString()));
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
             default -> {
                 HttpUtils.sendResponse(exchange, 400, "잘못된 요청입니다.");
                 Logger.error("잘못된 요청. \n없는 파라미터: " + key);
+                return;
             }
         }
+        JsonArray result = json.getAsJsonObject().getAsJsonArray("results");
+        HttpUtils.sendResponse(exchange, 200, result.toString());
+        Logger.success("반환 데이터 개수:" + result.size());
     }
 }
