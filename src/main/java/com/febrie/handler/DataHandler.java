@@ -23,10 +23,11 @@ public class DataHandler implements HttpHandler {
 
         String[] uri = exchange.getRequestURI().toString().split("/");
         String key = uri[2];
+        String ssid = uri[3];
 
         try {
             if (method.equals("POST")) {
-                handlePostRequest(exchange, key, HttpUtils.readRequestBody(exchange));
+                handlePostRequest(exchange, key, ssid, HttpUtils.readRequestBody(exchange));
             } else {
                 throw new MethodNotAllowedException("허용되지 않는 메서드입니다");
             }
@@ -45,9 +46,8 @@ public class DataHandler implements HttpHandler {
         }
     }
 
-    private void handlePostRequest(HttpExchange exchange, @NotNull String key, String data) throws IOException, NotFoundException {
+    private void handlePostRequest(HttpExchange exchange, @NotNull String key, @NotNull String ssid, String data) throws IOException, NotFoundException {
         JsonObject datajson = JsonParser.parseString(data).getAsJsonObject();
-        String ssid = datajson.get("ssid").getAsString();
         JsonElement json;
         switch (key) {
             case "pose" -> {
