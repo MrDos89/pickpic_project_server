@@ -3,40 +3,23 @@ package com.febrie.util;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Base64;
 
 public class FileManager {
 
-    @SuppressWarnings("ignored")
-    public static void saveBase64ImageToFile(String base64Image, String fileName) throws IOException {
-        String directory = Config.getImageSavePath();
-        Path dirPath = Paths.get(directory);
-
-        if (Files.exists(dirPath)) if (!dirPath.toFile().delete()) throw new IOException("파일이 없습니다");
-        Files.createDirectories(dirPath);
-        Logger.info("이미지 저장 디렉토리 생성: " + directory);
-        String filePath = directory + fileName;
-        File file = new File(filePath);
-
-        if (file.exists()) if (!file.delete()) throw new IOException("파일이 없습니다");
-
-        if (!file.exists())
-            if (!file.getParentFile().exists()) if (file.getParentFile().mkdirs()) Logger.info("유저 폴더 생성");
-
+    public static void saveBase64ImageToFile(String base64Image, String ssid, String uid) throws IOException {
+        File file = new File(Config.getImageSavePath() + ssid + "/" + uid + ".jpg");
         try {
             byte[] imageData = Base64.getDecoder().decode(base64Image);
-            try (FileOutputStream fos = new FileOutputStream(filePath)) {
+            try (FileOutputStream fos = new FileOutputStream(file)) {
                 fos.write(imageData);
             }
-            Logger.success("이미지 파일 저장 완료: " + filePath);
+            Logger.success("이미지 파일 저장 완료: " + file);
         } catch (IllegalArgumentException e) {
-            Logger.error("잘못된 Base64 형식: " + e.getMessage());
+            Logger.error("잘못된 Base64 형식: " + e);
             throw e;
         } catch (IOException e) {
-            Logger.error("파일 저장 오류: " + e.getMessage());
+            Logger.error("파일 저장 오류: " + e);
             throw e;
         }
     }
