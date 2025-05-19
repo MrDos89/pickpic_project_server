@@ -9,6 +9,7 @@ public class FileManager {
 
     public static void saveBase64ImageToFile(String base64Image, String ssid, String uid) throws IOException {
         File file = new File(Config.getImageSavePath() + ssid + "/" + uid + ".jpg");
+        if (file.getParentFile().mkdirs()) Logger.info("폴더 생성 완료: " + file.getParentFile());
         try {
             byte[] imageData = Base64.getDecoder().decode(base64Image);
             try (FileOutputStream fos = new FileOutputStream(file)) {
