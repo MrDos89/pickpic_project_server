@@ -6,7 +6,6 @@ import com.febrie.exception.NotFoundException;
 import com.febrie.util.HttpUtils;
 import com.febrie.util.Logger;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpExchange;
@@ -48,27 +47,27 @@ public class DataHandler implements HttpHandler {
 
     private void handlePostRequest(HttpExchange exchange, @NotNull String key, @NotNull String ssid, String data) throws IOException, NotFoundException {
         JsonObject datajson = JsonParser.parseString(data).getAsJsonObject();
-        JsonElement json;
+        JsonArray result;
         switch (key) {
             case "pose" -> {
                 try {
-                    json = JsonParser.parseString(ModelApi.getImageByPoses(ssid,
-                            datajson.get("pose").getAsString()));
+                    result = JsonParser.parseString(ModelApi.getImageByPoses(ssid,
+                            datajson.get("pose").getAsString())).getAsJsonObject().getAsJsonArray("results");
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }
             case "txt2img" -> {
                 try {
-                    json = JsonParser.parseString(ModelApi.searchByText(ssid,
-                            datajson.get("keyword").getAsString()));
+                    result = JsonParser.parseString(ModelApi.searchByText(ssid,
+                            datajson.get("keyword").getAsString())).getAsJsonObject().getAsJsonArray("results");
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }
             case "img2img" -> {
                 try {
-                    json = JsonParser.parseString(ModelApi.searchByImage(ssid, datajson.get("image_name").getAsString()));
+                    result = JsonParser.parseString(ModelApi.searchByImage(ssid, datajson.get("image_name").getAsString())).getAsJsonArray();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -79,7 +78,6 @@ public class DataHandler implements HttpHandler {
                 return;
             }
         }
-        JsonArray result = json.getAsJsonObject().getAsJsonArray("results");
         HttpUtils.sendResponse(exchange, 200, result.toString());
         Logger.success("반환 데이터 개수:" + result.size());//
     }
