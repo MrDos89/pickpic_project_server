@@ -129,7 +129,7 @@ public class ModelApi {
 
     public static @NotNull String searchByImage(String folder, String image_name) throws Exception {
         // 요청 URL 설정
-        URL url = new URL(SERVER_URL + "/api/v1/imgtoimg/search" + folder);
+        URL url = new URL(SERVER_URL + "/api/v1/imgtoimg/search/" + folder);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
         // 요청 설정
