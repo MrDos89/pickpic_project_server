@@ -81,6 +81,6 @@ public class DataHandler implements HttpHandler {
         }
         JsonArray result = json.getAsJsonObject().getAsJsonArray("results");
         HttpUtils.sendResponse(exchange, 200, result.toString());
-        Logger.success("반환 데이터 개수:" + result.size());
+        Logger.success("반환 데이터 개수:" + result.size());//
     }
 }
