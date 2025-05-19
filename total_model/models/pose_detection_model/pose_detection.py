@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import mediapipe as mp
 from ultralytics import YOLO
-from models.hands_detection_model.hands_detection import is_hands, is_heart, is_thumbs
+from models.hands_detection_model.hands_detection import is_v, is_heart, is_thumbs
 
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
@@ -165,7 +165,7 @@ class PoseDetector:
                 return "not found", image
             for hand_landmarks in results.multi_hand_landmarks:
                 lm = hand_landmarks.landmark
-                if is_hands(lm):
+                if is_v(lm):
                     return "브이", image
         return "not found", image
 
