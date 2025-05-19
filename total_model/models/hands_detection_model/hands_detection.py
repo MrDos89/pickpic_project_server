@@ -1,74 +1,22 @@
-# hand_model.py
 import mediapipe as mp
 import math
 import cv2
 
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
-
 hands = mp_hands.Hands(static_image_mode=True, max_num_hands=2, min_detection_confidence=0.5)
 
-def distance(p1, p2):
-    return math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2 + (p1.z - p2.z)**2)
-
-# def is_fist(lm):
-#     thumb_tip = lm[mp_hands.HandLandmark.THUMB_TIP]
-#     index_tip = lm[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-#     if distance(thumb_tip, index_tip) < 0.05:
-#         return False
-
-#     fingers_folded = []
-#     for tip_id in [
-#         mp_hands.HandLandmark.INDEX_FINGER_TIP,
-#         mp_hands.HandLandmark.MIDDLE_FINGER_TIP,
-#         mp_hands.HandLandmark.RING_FINGER_TIP,
-#         mp_hands.HandLandmark.PINKY_TIP
-#     ]:
-#         dip_id = tip_id - 3
-#         if lm[tip_id].y > lm[dip_id].y:
-#             fingers_folded.append(True)
-#         else:
-#             fingers_folded.append(False)
-
-#     index_pip = lm[mp_hands.HandLandmark.INDEX_FINGER_PIP]
-#     middle_pip = lm[mp_hands.HandLandmark.MIDDLE_FINGER_PIP]
-#     ring_pip = lm[mp_hands.HandLandmark.RING_FINGER_PIP]
-#     pinky_pip = lm[mp_hands.HandLandmark.PINKY_PIP]
-
-#     thumb_folded = (thumb_tip.x < index_pip.x and
-#                     thumb_tip.x < middle_pip.x and
-#                     thumb_tip.x < ring_pip.x and
-#                     thumb_tip.x < pinky_pip.x)
-
-#     return all(fingers_folded) or thumb_folded
-
-# def is_fy(lm):
-#     middle_tip = lm[mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
-#     middle_pip = lm[mp_hands.HandLandmark.MIDDLE_FINGER_PIP]
-#     middle_mcp = lm[mp_hands.HandLandmark.MIDDLE_FINGER_MCP]
-
-#     index_tip = lm[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-#     ring_tip = lm[mp_hands.HandLandmark.RING_FINGER_TIP]
-#     pinky_tip = lm[mp_hands.HandLandmark.PINKY_TIP]
-
-#     is_middle_extended = middle_tip.y < middle_pip.y < middle_mcp.y
-#     are_others_folded = (
-#         index_tip.y > lm[mp_hands.HandLandmark.INDEX_FINGER_PIP].y and
-#         ring_tip.y > lm[mp_hands.HandLandmark.RING_FINGER_PIP].y and
-#         pinky_tip.y > lm[mp_hands.HandLandmark.PINKY_PIP].y
-#     )
-#     return is_middle_extended and are_others_folded
-
-def is_heart(lm, image_height, image_width):
-    # ---- Finger Heart 조건 ----
-    # if isinstance(lm, list):  # 두 손이 들어온 경우 (multi_hand_landmarks)
-    #     heart_hands = [hand for hand in lm if is_heart(hand)]
-    #     if len(heart_hands) >= 2:
-    #         return "하트"
-    #     else:
-    #         return "하트 아님"
-
-    # 단일 손 기준
+def is_heart(lm, image_height=None, image_width=None, threshold=0.2, required_conditions=2):
+    
+    def distance(p1, p2):
+        return math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2 + (p1.z - p2.z)**2)
+    
+    # 먼저 V 포즈인지 확인 - V 포즈면 바로 False 반환
+    if image_height is not None and image_width is not None:
+        if is_v(lm, image_height, image_width):
+            return False
+    
+    # 손가락 하트 조건
     thumb_tip = lm[mp_hands.HandLandmark.THUMB_TIP]
     index_tip = lm[mp_hands.HandLandmark.INDEX_FINGER_TIP]
     middle_tip = lm[mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
@@ -81,147 +29,56 @@ def is_heart(lm, image_height, image_width):
         ring_tip.y > lm[mp_hands.HandLandmark.RING_FINGER_PIP].y and
         pinky_tip.y > lm[mp_hands.HandLandmark.PINKY_PIP].y
     )
+    if thumb_index_dist < 0.05 and other_folded:
+        return True
 
-    if thumb_index_dist < 0.04 and other_folded:
-        return "하트"  # 손가락 하트
-
-    # ---- Cheek Heart 조건 ----
+    # 볼하트 조건 (image_height, image_width 필요)
     if image_height is not None and image_width is not None:
-        hand_y = lm[mp_hands.HandLandmark.WRIST].y * image_height
+        index_base = lm[mp_hands.HandLandmark.INDEX_FINGER_MCP]
+        wrist = lm[mp_hands.HandLandmark.WRIST]
+
         index_tip_y = index_tip.y * image_height
+        index_base_y = index_base.y * image_height
+        wrist_y = wrist.y * image_height
 
-        if (
-            thumb_index_dist < 0.06 and
-            hand_y < image_height * 0.5 and
-            index_tip_y < image_height * 0.5
-        ):
-            return "하트"  # 볼 하트
+        satisfied = 0
 
-    return "하트 아님"
-   
+        # 조건 1: 손가락 간 거리 가까움
+        distances = [
+            distance(index_tip, middle_tip),
+            distance(index_tip, ring_tip),
+            distance(index_tip, pinky_tip),
+            distance(middle_tip, ring_tip),
+            distance(middle_tip, pinky_tip),
+            distance(ring_tip, pinky_tip)
+        ]
+        close_count = sum(1 for dist in distances if dist < threshold)
+        if close_count >= 2:
+            satisfied += 1
 
-def is_hands(lm):
-    def calculate_distance(p1, p2):
-        return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+        # 조건 2: 손이 너무 아래 있지 않음
+        if index_tip_y < image_height * 0.85 and wrist_y < image_height * 0.95:
+            satisfied += 1
 
-    def calculate_angle(p1, p2, p3):
-        x1, y1 = p1
-        x2, y2 = p2
-        x3, y3 = p3
-        angle = math.degrees(math.atan2(y3 - y2, x3 - x2) - math.atan2(y1 - y2, x1 - x2))
-        return abs(angle)
+        # 조건 3: 손끝이 손등보다 아래(구부려짐)
+        if index_tip_y < index_base_y + 10: # 픽셀 단위로 조정될 수 있음
+            satisfied += 1
 
-    wrist = lm[mp.solutions.hands.HandLandmark.WRIST]
-    thumb_tip = lm[mp.solutions.hands.HandLandmark.THUMB_TIP]
-    index_finger_tip = lm[mp.solutions.hands.HandLandmark.INDEX_FINGER_TIP]
-    index_finger_pip = lm[mp.solutions.hands.HandLandmark.INDEX_FINGER_PIP]
-    middle_finger_tip = lm[mp.solutions.hands.HandLandmark.MIDDLE_FINGER_TIP]
+        # 조건 4: 엄지와 검지 간 x좌표 가까움
+        index_thumb_x_diff = abs(index_tip.x - thumb_tip.x)
+        if index_thumb_x_diff < 0.25: # 정규화된 좌표 기준
+            satisfied += 1
 
-    wrist_x, wrist_y = wrist.x, wrist.y
-    thumb_tip_x, thumb_tip_y = thumb_tip.x, thumb_tip.y
-    index_tip_x_raw, index_tip_y_raw = index_finger_tip.x, index_finger_tip.y
-    index_pip_x, index_pip_y = index_finger_pip.x, index_finger_pip.y
-    middle_tip_x, middle_tip_y = middle_finger_tip.x, middle_finger_tip.y
-
-    index_x = index_tip_x_raw if (index_tip_x_raw != 0 or index_tip_y_raw != 0) else index_pip_x
-    index_y = index_tip_y_raw if (index_tip_x_raw != 0 or index_tip_y_raw != 0) else index_pip_y
-
-    angle_thumb_index = calculate_angle(
-        (wrist_x, wrist_y), (thumb_tip_x, thumb_tip_y), (index_x, index_y)
-    )
-
-    distance_thumb_index = calculate_distance((thumb_tip_x, thumb_tip_y), (index_x, index_y))
-
-    distance_threshold = 0.08
-
-    index_below_middle = index_y > middle_tip_y
-
-    if angle_thumb_index > 25 and distance_thumb_index > distance_threshold:
-        if index_y < wrist_y and thumb_tip_y < wrist_y:
-            return True
-        elif index_below_middle and thumb_tip_y > wrist_y and middle_tip_y > wrist_y:
-            return True
-        elif not index_below_middle and thumb_tip_y > wrist_y and index_y > wrist_y and angle_thumb_index > 50:
+        if satisfied >= required_conditions:
             return True
 
     return False
 
-# def is_military(lm):
-#     def finger_extended(tip_id):
-#         pip_id = tip_id - 2
-#         # 끝 마디가 중간 마디 위에 있으면 펴진 상태로 간주
-#         return lm[tip_id].y < lm[pip_id].y
-
-#     # 손가락들이 펴져있는지 체크
-#     index_extended = finger_extended(mp_hands.HandLandmark.INDEX_FINGER_TIP)
-#     middle_extended = finger_extended(mp_hands.HandLandmark.MIDDLE_FINGER_TIP)
-#     ring_extended = finger_extended(mp_hands.HandLandmark.RING_FINGER_TIP)
-#     pinky_extended = finger_extended(mp_hands.HandLandmark.PINKY_TIP)
-
-#     # 엄지 각도 계산 함수
-#     def calculate_angle(p1, p2, p3):
-#         v1 = [p1.x - p2.x, p1.y - p2.y, p1.z - p2.z]
-#         v2 = [p3.x - p2.x, p3.y - p2.y, p3.z - p2.z]
-#         dot_product = sum(a * b for a, b in zip(v1, v2))
-#         magnitude_v1 = math.sqrt(sum(a * a for a in v1))
-#         magnitude_v2 = math.sqrt(sum(a * a for a in v2))
-#         if magnitude_v1 * magnitude_v2 == 0:
-#             return 0
-#         cos_theta = dot_product / (magnitude_v1 * magnitude_v2)
-#         angle = math.acos(min(1.0, max(-1.0, cos_theta)))
-#         return math.degrees(angle)
-
-#     thumb_angle = calculate_angle(
-#         lm[mp_hands.HandLandmark.THUMB_CMC],
-#         lm[mp_hands.HandLandmark.THUMB_MCP],
-#         lm[mp_hands.HandLandmark.THUMB_IP]
-#     )
-#     thumb_extended = thumb_angle > 30  # 어느 정도 펴져있음
-
-#     # 검지 끝 위치가 화면 위쪽 40% 이내에 있으면 이마 근처로 간주
-#     index_tip = lm[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-#     is_near_forehead = index_tip.y < 0.4
-
-#     # 조건 모두 만족 시 경례 포즈
-#     if all([index_extended, middle_extended, ring_extended, pinky_extended, thumb_extended, is_near_forehead]):
-#         return True
-#     else:
-#         return False
-
-# def is_okay(lm):
-#     def calculate_distance(p1, p2):
-#         return math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2)
-
-#     def is_finger_extended(tip_id, pip_id, mcp_id):
-#         # 손가락 끝이 중간 마디 위에, 중간 마디가 근위 마디 위에 있으면 펴진 것으로 판단
-#         return lm[tip_id].y < lm[pip_id].y < lm[mcp_id].y
-
-#     thumb_tip = lm[mp_hands.HandLandmark.THUMB_TIP]
-#     index_tip = lm[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-#     distance = calculate_distance(thumb_tip, index_tip)
-
-#     middle_extended = is_finger_extended(mp_hands.HandLandmark.MIDDLE_FINGER_TIP,
-#                                          mp_hands.HandLandmark.MIDDLE_FINGER_PIP,
-#                                          mp_hands.HandLandmark.MIDDLE_FINGER_MCP)
-#     ring_extended = is_finger_extended(mp_hands.HandLandmark.RING_FINGER_TIP,
-#                                        mp_hands.HandLandmark.RING_FINGER_PIP,
-#                                        mp_hands.HandLandmark.RING_FINGER_MCP)
-#     pinky_extended = is_finger_extended(mp_hands.HandLandmark.PINKY_TIP,
-#                                         mp_hands.HandLandmark.PINKY_PIP,
-#                                         mp_hands.HandLandmark.PINKY_MCP)
-
-#     # 엄지와 검지 끝이 가까이 붙어 있고, 나머지 세 손가락은 펴져 있으면 OKAY 포즈
-#     if distance < 0.05 and middle_extended and ring_extended and pinky_extended:
-#         return True
-#     else:
-#         return False
-
-def is_thumbs(lm):
+def is_v(lm, image_height, image_width):
+    """V 포즈 감지 함수"""
+    # 랜드마크 추출
     wrist = lm[mp_hands.HandLandmark.WRIST]
     thumb_tip = lm[mp_hands.HandLandmark.THUMB_TIP]
-    thumb_ip = lm[mp_hands.HandLandmark.THUMB_IP]
-    thumb_mcp = lm[mp_hands.HandLandmark.THUMB_MCP]
-
     index_tip = lm[mp_hands.HandLandmark.INDEX_FINGER_TIP]
     index_pip = lm[mp_hands.HandLandmark.INDEX_FINGER_PIP]
     middle_tip = lm[mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
@@ -230,35 +87,107 @@ def is_thumbs(lm):
     ring_pip = lm[mp_hands.HandLandmark.RING_FINGER_PIP]
     pinky_tip = lm[mp_hands.HandLandmark.PINKY_TIP]
     pinky_pip = lm[mp_hands.HandLandmark.PINKY_PIP]
+    
+    # 좌표 변환
+    w, h = image_width, image_height
+    wrist_x, wrist_y = int(wrist.x * w), int(wrist.y * h)
+    thumb_tip_x, thumb_tip_y = int(thumb_tip.x * w), int(thumb_tip.y * h)
+    index_tip_x, index_tip_y = int(index_tip.x * w), int(index_tip.y * h)
+    index_pip_x, index_pip_y = int(index_pip.x * w), int(index_pip.y * h)
+    middle_tip_x, middle_tip_y = int(middle_tip.x * w), int(middle_tip.y * h)
+    middle_pip_x, middle_pip_y = int(middle_pip.x * w), int(middle_pip.y * h)
+    ring_tip_x, ring_tip_y = int(ring_tip.x * w), int(ring_tip.y * h)
+    pinky_tip_x, pinky_tip_y = int(pinky_tip.x * w), int(pinky_tip.y * h)
+    
+    # 각도 계산 함수
+    def calculate_angle(p1, p2, p3):
+        x1, y1 = p1
+        x2, y2 = p2
+        x3, y3 = p3
+        angle = math.degrees(math.atan2(y3 - y2, x3 - x2) - math.atan2(y1 - y2, x1 - x2))
+        return abs(angle)
+    
+    # 거리 계산 함수
+    def calculate_distance(p1, p2):
+        return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+    
+    # 엄지-검지 각도 계산
+    angle_thumb_index = calculate_angle((wrist_x, wrist_y), (thumb_tip_x, thumb_tip_y), (index_tip_x, index_tip_y))
+    
+    # 엄지-검지 거리 계산
+    distance_thumb_index = calculate_distance((thumb_tip_x, thumb_tip_y), (index_tip_x, index_tip_y))
+    distance_threshold = w * 0.08
+    
+    # 검지와 중지 상태 확인
+    index_below_middle = index_tip_y > middle_tip_y
+    
+    # 약지, 소지가 접혀있는지 확인
+    ring_folded_by_middle = ring_tip_y > middle_tip_y * 0.5
+    pinky_folded_by_middle = pinky_tip_y > middle_tip_y * 0.5
+    
+    # 손가락 길이 임계값
+    finger_length_threshold = w * 0.02
+    
+    # 손가락 길이 및 펴짐 상태 확인
+    index_length = calculate_distance((index_pip_x, index_pip_y), (index_tip_x, index_tip_y))
+    middle_length = calculate_distance((middle_pip_x, middle_pip_y), (middle_tip_x, middle_tip_y))
+    
+    index_extended = index_length > finger_length_threshold
+    middle_extended = middle_length > finger_length_threshold
+    
+    # 검지-중지 간격 확인
+    distance_index_middle = calculate_distance((index_tip_x, index_tip_y), (middle_tip_x, middle_tip_y))
+    index_middle_spread = distance_index_middle > w * 0.05
+    
+    # V 포즈 판정
+    if angle_thumb_index > 25 and distance_thumb_index > distance_threshold and index_extended and middle_extended and index_middle_spread:
+        # 일반 V 포즈
+        if index_tip_y < wrist_y and thumb_tip_y < wrist_y and ring_folded_by_middle and pinky_folded_by_middle:
+            return True
+        # 아래 방향 V 포즈
+        elif index_below_middle and thumb_tip_y > wrist_y and middle_tip_y > wrist_y and ring_folded_by_middle and pinky_folded_by_middle:
+            return True
+        elif not index_below_middle and thumb_tip_y > wrist_y and index_tip_y > wrist_y and angle_thumb_index > 50 and ring_folded_by_middle and pinky_folded_by_middle:
+            return True
+    
+    return False
 
-    # 엄지 방향 벡터 계산 (thumb_mcp → thumb_tip)
-    thumb_vec = [
-        thumb_tip.x - thumb_mcp.x,
-        thumb_tip.y - thumb_mcp.y,
-        thumb_tip.z - thumb_mcp.z,
-    ]
-    upward_vec = [0, -1, 0]
-
-    # 각도 계산 함수 추가
-    def vector_angle(v1, v2):
-        dot = sum(a*b for a, b in zip(v1, v2))
-        norm1 = math.sqrt(sum(a*a for a in v1))
-        norm2 = math.sqrt(sum(a*a for a in v2))
-        cos_theta = dot / (norm1 * norm2 + 1e-6)
-        return math.acos(max(min(cos_theta, 1), -1))
-
-    angle = vector_angle(thumb_vec, upward_vec)
-    thumb_up = angle < math.radians(70)  # 50도 → 70도
-
-    # 다른 손가락이 접혀 있는지 (2개 이상만 접혀도 인정)
-    folded_count = 0
-    if index_tip.y > index_pip.y: folded_count += 1
-    if middle_tip.y > middle_pip.y: folded_count += 1
-    if ring_tip.y > ring_pip.y: folded_count += 1
-    if pinky_tip.y > pinky_pip.y: folded_count += 1
-    fingers_folded = folded_count >= 2
-
-    return thumb_up and fingers_folded
+def is_thumbs(landmarks):
+    """따봉 포즈인지 확인"""
+    thumb_tip = landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP]
+    thumb_ip = landmarks.landmark[mp_hands.HandLandmark.THUMB_IP]
+    wrist = landmarks.landmark[mp_hands.HandLandmark.WRIST]
+    
+    index_tip = landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+    index_pip = landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_PIP]
+    middle_tip = landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
+    middle_pip = landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_PIP]
+    ring_tip = landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_TIP]
+    ring_pip = landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_PIP]
+    pinky_tip = landmarks.landmark[mp_hands.HandLandmark.PINKY_TIP]
+    pinky_pip = landmarks.landmark[mp_hands.HandLandmark.PINKY_PIP]
+    
+    # 엄지가 위로 향하고 다른 손가락들이 접혀있는지
+    thumb_up = thumb_tip.y < thumb_ip.y and thumb_tip.y < wrist.y + 0.05 
+    
+    # 다른 손가락들이 접혀 있는지 확인 (y 좌표 기준, 이미지 위쪽이 0)
+    # 각 손가락 끝(TIP)이 중간 마디(PIP)보다 y값이 크면 접힌 것으로 간주 (더 아래쪽에 위치)
+    # 약간의 오차를 허용하기 위해 -0.02 (또는 +0.02, 이미지 좌표계에 따라) 추가
+    fingers_folded = (
+        index_tip.y > index_pip.y - 0.02 and
+        middle_tip.y > middle_pip.y - 0.02 and
+        ring_tip.y > ring_pip.y - 0.02 and
+        pinky_tip.y > pinky_pip.y - 0.02
+    )
+    
+    # 엄지손가락이 다른 모든 손가락 끝보다 위에 있는지 확인
+    thumb_highest = (
+        thumb_tip.y < index_tip.y and
+        thumb_tip.y < middle_tip.y and
+        thumb_tip.y < ring_tip.y and
+        thumb_tip.y < pinky_tip.y
+    )
+    return thumb_up and thumb_highest and fingers_folded
 
 def classify_hand_pose(image):
     """
@@ -278,18 +207,10 @@ def classify_hand_pose(image):
     for hand_landmarks in results.multi_hand_landmarks:
         lm = hand_landmarks.landmark
 
-        # if is_fist(lm):
-        #     pose_results['Fist'] = True
-        # if is_fy(lm):
-        #     pose_results['FY'] = True
         if is_heart(lm, image_height, image_width):
             pose_results['Heart'] = True
-        if is_hands(lm):
+        if is_v(lm):
             pose_results['Hands'] = True
-        # if is_military(lm):
-        #     pose_results['Military'] = True
-        # if is_okay(lm):
-        #     pose_results['Okay'] = True
         if is_thumbs(lm):
             pose_results['Thumbs'] = True
 
@@ -302,14 +223,9 @@ def get_pose_func_map():
     """
     return {
         "하트": lambda lm, h, w: is_heart(lm, h, w),
-        "브이": lambda lm, h, w: is_hands(lm),
+        "브이": lambda lm, h, w: is_v(lm),
         "최고": lambda lm, h, w: is_thumbs(lm),
-        # "fist": lambda lm, h, w: is_fist(lm),  # 주석 해제 시 사용
-        # "okay": lambda lm, h, w: is_okay(lm),
-        # "fy": lambda lm, h, w: is_fy(lm),
-        # "military": lambda lm, h, w: is_military(lm),
     }
-
 
 def detect_pose_by_keyword(image, keyword):
     """
